@@ -1,9 +1,20 @@
-## 使用说明
+<div align="center">
 
+# BVTC
+
+![](https://img.shields.io/github/go-mod/go-version/2025youzill/bilibili-video-to-mp4?filename=banked%2Fgo.mod)
+
+![](https://img.shields.io/github/package-json/v/2025youzill/bilibili-video-to-mp4?filename=frontend%2Fpackage.json)
+
+</div>
+
+## 使用说明
 - 使用内嵌ffmpeg，下载链接：[ffmpeg-master-latest-win64-gpl.zip](https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip)，解压，并将ffmpeg.exe添加到banked/tool/ffmpeg
 - go程序运行使用air运行（可热重载），相关信息查看相关git仓库：[air-verse/air: ☁️ Live reload for Go apps](https://github.com/air-verse/air)
 
 ## 运行
+
+### 后端
 
 - 进入banked文件夹
   ```bash
@@ -13,6 +24,8 @@
   ```bash
   air
   ````
+
+### 前端
 
 ## ❤️ 鸣谢
 
