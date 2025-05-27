@@ -14,6 +14,7 @@
 ## 运行
 
 ### 后端
+
 - 进入banked文件夹
   ```bash
   cd banked
@@ -22,7 +23,9 @@
   ```bash
   air
   ````
+
 ### 前端
+
 - 进入fronted文件夹
   ```
   cd fronted
@@ -35,7 +38,7 @@
   ```
   npm start
   ```
-- 端口将在http://localhost:3000/开放
+- 端口将在 http://localhost:3000 开放
 
 ## ❤️ 鸣谢
 
