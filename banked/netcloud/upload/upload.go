@@ -1,0 +1,171 @@
+package upload
+
+import (
+	"banked/client"
+	"banked/constant"
+	"banked/log"
+	"context"
+	"errors"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+
+	"github.com/chaunsin/netease-cloud-music/api/weapi"
+	"github.com/chaunsin/netease-cloud-music/pkg/utils"
+	"github.com/dhowden/tag"
+)
+
+var ctx context.Context = context.Background()
+
+func UploadToNetCloud(filename string) error {
+	// 检查文件是否存在
+	ext := filepath.Ext(filename)
+	bitrate := constant.BitRate
+
+	api, err := client.GetNetcloudApi()
+	if err != nil {
+		log.Logger.Error("client fail to init", log.Any("err : ", err))
+		return err
+	}
+
+	// 读取文件
+	file, err := os.Open(filename)
+	if err != nil {
+		log.Logger.Error("fail to open file", log.Any("err : ", err))
+		return err
+	}
+	defer file.Close()
+
+	stat, err := file.Stat()
+	if err != nil {
+		log.Logger.Error("fail to start file", log.Any("err : ", err))
+		return err
+	}
+
+	data, err := io.ReadAll(file)
+	if err != nil {
+		log.Logger.Error("fail to read file", log.Any("err : ", err))
+		return err
+	}
+
+	md5, err := utils.MD5Hex(data)
+	if err != nil {
+		log.Logger.Error("fail to change to MD5Hex", log.Any("err : ", err))
+		return err
+	}
+
+	// 重新设置文件指针到开头
+	_, err = file.Seek(0, io.SeekStart)
+	if err != nil {
+		log.Logger.Error("fail to set header", log.Any("err : ", err))
+		return err
+	}
+
+	// 检查此文件是否需要上传
+	var checkReq = weapi.CloudUploadCheckReq{
+		Bitrate: bitrate,
+		Ext:     ext,
+		Length:  fmt.Sprintf("%d", stat.Size()),
+		Md5:     md5,
+		SongId:  "0",
+		Version: "1",
+	}
+	resp, err := api.CloudUploadCheck(ctx, &checkReq)
+	if err != nil {
+		log.Logger.Error("fail to get token", log.Any("err : ", err), log.Any("Code : ", resp.Code))
+		return err
+	}
+	if resp.Code != 200 {
+		log.Logger.Error("token Code is not 200", log.Any("Code : ", resp.Code))
+		return errors.New("token Code is not compare")
+	}
+
+	// 获取上传凭证
+	var allocReq = weapi.CloudTokenAllocReq{
+		Bucket:     "", // jd-musicrep-privatecloud-audio-public
+		Ext:        ext,
+		Filename:   filepath.Base(filename),
+		Local:      "false",
+		NosProduct: "3",
+		Type:       "audio",
+		Md5:        md5,
+	}
+	allocResp, err := api.CloudTokenAlloc(ctx, &allocReq)
+	if err != nil {
+		log.Logger.Error("fail to get token", log.Any("err : ", err), log.Any("Code : ", resp.Code))
+		return err
+	}
+	if allocResp.Code != 200 {
+		log.Logger.Error("token Code is not 200", log.Any("Code : ", resp.Code))
+		return errors.New("token Code is not compare")
+	}
+
+	// 上传文件
+	if resp.NeedUpload {
+		var uploadReq = weapi.CloudUploadReq{
+			Bucket:    allocResp.Bucket,
+			ObjectKey: allocResp.ObjectKey,
+			Token:     allocResp.Token,
+			Filepath:  filename,
+		}
+		uploadResp, err := api.CloudUpload(ctx, &uploadReq)
+		if err != nil {
+			log.Logger.Error("fail to upload", log.Any("err : ", err), log.Any("Code : ", uploadResp.ErrCode))
+			return err
+		}
+		if uploadResp.ErrCode != "" {
+			log.Logger.Error("fail to upload", log.Any("Code : ", uploadResp.ErrCode))
+			return errors.New("upload Code is not compare")
+		}
+	}
+
+	// 上传歌曲相关信息
+	metadata, err := tag.ReadFrom(file)
+	if err != nil {
+		log.Logger.Error("fail to upload", log.Any("err : ", err))
+		return err
+	}
+
+	var InfoReq = weapi.CloudInfoReq{
+		Md5:        md5,
+		SongId:     resp.SongId,
+		Filename:   stat.Name(),
+		Song:       utils.Ternary(metadata.Title() != "", metadata.Title(), filepath.Base(filename)),
+		Album:      utils.Ternary(metadata.Album() != "", metadata.Album(), "未知专辑"),
+		Artist:     utils.Ternary(metadata.Artist() != "", metadata.Artist(), "未知艺术家"),
+		Bitrate:    bitrate,
+		ResourceId: allocResp.ResourceID,
+	}
+	infoResp, err := api.CloudInfo(ctx, &InfoReq)
+	if err != nil {
+		log.Logger.Error("fail to upload music imformation", log.Any("err : ", err))
+		return err
+	}
+	if infoResp.Code != 200 {
+		log.Logger.Error("fail to upload music imformation", log.Any("Code : ", infoResp.Code))
+		return errors.New("upload Code is not compare")
+	}
+
+	// 对上传得歌曲进行发布，和自己账户做关联,不然云盘列表看不到上传得歌曲信息
+	var publishReq = weapi.CloudPublishReq{
+		SongId: infoResp.SongId,
+	}
+	publishResp, err := api.CloudPublish(ctx, &publishReq)
+	if err != nil {
+		log.Logger.Error("fail to publish", log.Any("err : ", err))
+		return err
+	}
+	fmt.Println("publishResp : ", publishResp)
+	switch publishResp.Code {
+	case 200:
+		log.Logger.Info("success to upload", log.Any("filename : ", filename))
+		return nil
+	case 201:
+		log.Logger.Info("the music already exists", log.Any("filename : ", filename))
+		return errors.New("the music already exists")
+	default:
+		log.Logger.Error("fail to publish", log.Any("filename : ", filename))
+		return errors.New("upload Code is not compare")
+	}
+}
