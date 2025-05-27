@@ -4,7 +4,7 @@
 
 ![](https://img.shields.io/github/go-mod/go-version/2025youzill/bilibili-video-to-mp4?filename=banked%2Fgo.mod)
 
-![](https://img.shields.io/github/package-json/v/2025youzill/bilibili-video-to-mp4?filename=frontend%2Fpackage.json)
+![](https://img.shields.io/badge/npm-10.9.0-blue)
 
 </div>
 
