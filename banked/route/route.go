@@ -26,7 +26,6 @@ func NewRouter() *gin.Engine {
 		group.GET("/netcloud/login/check", netclogin.CheckCookie)     // 检查登陆状态
 
 		group.POST("/bilibili/video/load", video.LoadMP4)
-		group.GET("/bilibili/video/translate", video.AdaptHandler(video.TranslateVideoToAudio))
 	}
 	return server
 }

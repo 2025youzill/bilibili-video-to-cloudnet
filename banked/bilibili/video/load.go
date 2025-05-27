@@ -21,8 +21,9 @@ type VideoStreamReq struct {
 }
 
 func LoadMP4(ctx *gin.Context) {
-	bvid := ctx.Query("bvid")
-	if bvid == "" {
+	var req VideoStreamReq
+	ctx.ShouldBindJSON(&req)
+	if req.Bvid == "" {
 		log.Logger.Error("bvid is empty")
 		ctx.JSON(http.StatusBadRequest, response.FailMsg("bvid is empty"))
 		return
@@ -35,8 +36,13 @@ func LoadMP4(ctx *gin.Context) {
 		return
 	}
 
-	videoinfo, _ := cli.GetVideoInfo(bilibili.VideoParam{Bvid: bvid})
-	req := VideoStreamReq{Bvid: bvid, Cid: videoinfo.Cid}
+	videoinfo, err := cli.GetVideoInfo(bilibili.VideoParam{Bvid: req.Bvid})
+	if err != nil {
+		log.Logger.Error("get video info fail", log.Any("err : ", err))
+		ctx.JSON(http.StatusInternalServerError, "get video info fail")
+		return
+	}
+	req.Cid = videoinfo.Cid
 
 	stream, err := cli.GetVideoStream(bilibili.GetVideoStreamParam{Bvid: req.Bvid, Cid: req.Cid})
 	if err != nil {
@@ -48,6 +54,7 @@ func LoadMP4(ctx *gin.Context) {
 	// 下载视频
 	url := stream.Durl[0].Url
 	filename := filepath.Join(constant.Filepath, fmt.Sprintf("%s.mp4", videoinfo.Title))
+	defer os.Remove(filename)
 	err = os.MkdirAll(constant.Filepath, 0755)
 	if err != nil {
 		log.Logger.Error("创建输出目录失败", log.Any("err : ", err))
@@ -73,12 +80,12 @@ func LoadMP4(ctx *gin.Context) {
 	}
 
 	// 转化为mp3
-	// err = TranslateVideoToAudio(filename)
-	// if err != nil {
-	// 	log.Logger.Error("转化mp3失败", log.Any("err : ", err))
-	// 	ctx.JSON(http.StatusInternalServerError, response.FailMsg("转化mp3失败"))
-	// 	return
-	// }
+	err = TranslateVideoToAudio(filename)
+	if err != nil {
+		log.Logger.Error("转化mp3失败", log.Any("err : ", err))
+		ctx.JSON(http.StatusInternalServerError, response.FailMsg("转化mp3失败"))
+		return
+	}
 
 	ctx.JSON(http.StatusOK, "success")
 

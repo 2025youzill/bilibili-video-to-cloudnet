@@ -6,33 +6,19 @@ import (
 	"banked/netcloud/upload"
 	"banked/tool/ffmpeg"
 	"bytes"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"syscall"
-
-	"github.com/gin-gonic/gin"
 )
-
-func AdaptHandler(f func(ctx *gin.Context) error) gin.HandlerFunc {
-	return func(ctx *gin.Context) {
-		err := f(ctx)
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-	}
-}
 
 type AudioReq struct {
 	Title  string
 	Artist string
 }
 
-func TranslateVideoToAudio(ctx *gin.Context) error {
-	filename := filepath.Join(constant.Filepath, "『探窗』绝美戏腔演唱“一句一叹戏里有情痴”.mp4")
+func TranslateVideoToAudio(filename string) error {
 	currentDir, err := os.Getwd()
 	if err != nil {
 		log.Logger.Error("获取当前目录失败", log.Any("err", err))
@@ -46,14 +32,14 @@ func TranslateVideoToAudio(ctx *gin.Context) error {
 	}
 
 	outputFile := strings.TrimSuffix(filename, ".mp4") + ".mp3"
+	defer os.Remove(outputFile) // 确保最后删除临时文件
 
-	ffmpegPath, ffprobePath, err := ffmpeg.ExtractFFmpeg()
+	ffmpegPath, err := ffmpeg.ExtractFFmpeg()
 	if err != nil {
 		log.Logger.Error("提取 FFmpeg 失败", log.Any("err", err))
 		return err
 	}
 	defer os.Remove(ffmpegPath)
-	defer os.Remove(ffprobePath)
 
 	// 执行转换
 	if err := convertToMP3(ffmpegPath, inputFile, outputFile); err != nil {
@@ -61,13 +47,11 @@ func TranslateVideoToAudio(ctx *gin.Context) error {
 	}
 
 	err = upload.UploadToNetCloud(outputFile)
-	if err!= nil {
+	if err != nil {
 		log.Logger.Error("上传失败", log.Any("err", err))
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "上传失败"})
 		return err
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "转换成功"})
 	return nil
 }
 
@@ -105,17 +89,17 @@ func convertToMP3(ffmpegPath, inputFile, outputFile string) error {
 		"-i", tmpOutput, // 音频文件
 		"-i", coverArt, // 封面图片
 		"-filter_complex", "[1:v]scale=960:960:force_original_aspect_ratio=decrease,pad=960:960:(ow-iw)/2:(oh-ih)/2[v]", // 调整尺寸并保持宽高比,尺寸不够用黑边补全(pad)
-		"-map", "0:a",		 // 音频流
-		"-map", "[v]",		 // 调整后的封面流
-		"-c:a", "copy",		 // 直接复制流（无需重新编码）
-		"-c:v", "mjpeg",		 // 重新编码封面为JPEG格式
-		"-id3v2_version", "3",		 // 采用ID3V2.3版本，可以保存封面
-		"-metadata", "title=探窗", 		// 标题
-		"-metadata", "artist=兰音",		 // 歌手
-		"-metadata", "album=", 		// 专辑(留空)
-		"-metadata:s:v", "title=Cover",		 // 封面流标题
-		"-metadata:s:v", "comment=Cover (Front)", 		// 评论留空
-		"-disposition:v", "attached_pic",		 // 标记为封面
+		"-map", "0:a", // 音频流
+		"-map", "[v]", // 调整后的封面流
+		"-c:a", "copy", // 直接复制流（无需重新编码）
+		"-c:v", "mjpeg", // 重新编码封面为JPEG格式
+		"-id3v2_version", "3", // 采用ID3V2.3版本，可以保存封面
+		"-metadata", "title=探窗", // 标题
+		"-metadata", "artist=兰音", // 歌手
+		"-metadata", "album=", // 专辑(留空)
+		"-metadata:s:v", "title=Cover", // 封面流标题
+		"-metadata:s:v", "comment=Cover (Front)", // 评论留空
+		"-disposition:v", "attached_pic", // 标记为封面
 		"-y",
 		outputFile,
 	)
