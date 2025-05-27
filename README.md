@@ -19,4 +19,5 @@
 - [chaunsin/netease-cloud-music: 网易云音乐 Golang API 接口 + 命令行工具套件(签到 + 音乐合伙人 + 云盘 + 下载Hi-Res音质 + 刷歌等) + 一键完成任务](https://github.com/chaunsin/netease-cloud-music)
 - [CuteReimu/bilibili: 哔哩哔哩bilibili的API的Go SDK](https://github.com/CuteReimu/bilibili)
 - [FFmpeg](https://ffmpeg.org/)
-  以及本项目所依赖的三方优秀库。
+
+以及本项目所依赖的所有优秀的库。
