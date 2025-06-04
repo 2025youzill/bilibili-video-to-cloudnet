@@ -7,6 +7,7 @@
 </div>
 
 ## ⚠️ 声明
+
 **切勿用作商业用途、非法用途使用！！！**
 
 **本项目解析得到的所有内容均来自B站UP主上传、分享，其版权均归原作者所有，请尊重up主的努力。**
@@ -15,12 +16,12 @@
 
 **本项目仅供个人学习使用,利用本项目造成不良影响及后果与本人无关。**
 
-## 使用说明
+## :book:使用说明
 
 - 使用内嵌ffmpeg，下载链接：[ffmpeg-master-latest-win64-gpl.zip](https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip)，解压，并将ffmpeg.exe添加到banked/tool/ffmpeg
 - go程序运行使用air运行（可热重载），相关信息查看相关git仓库：[air-verse/air: ☁️ Live reload for Go apps](https://github.com/air-verse/air)
 
-## 运行
+## :gear:运行
 
 ### 后端
 
@@ -48,6 +49,12 @@
   npm start
   ```
 - 端口将在 http://localhost:3000 开放
+
+##  :hammer_and_wrench:TODO
+
+- 从网盘直接保存到歌单，省去保存到歌单的步骤（对于api接口尚未实现）
+- 对up主视频进行列表展示，方便批量转存
+- 对歌曲歌词，封面等信息的完善（网易云限制严重，只能等大佬发现方法了）
 
 ## ❤️ 鸣谢
 
