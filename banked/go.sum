@@ -12,8 +12,8 @@ github.com/bytedance/sonic v1.11.6 h1:oUp34TzMlL+OY1OUWxHqsdkgC/Zfc85zGqw9siXjrc
 github.com/bytedance/sonic v1.11.6/go.mod h1:LysEHSvpvDySVdC2f87zGWf6CIKJcAvqab1ZaiQtds4=
 github.com/bytedance/sonic/loader v0.1.1 h1:c+e5Pt1k/cy5wMveRDyk2X4B9hF4g7an8N3zCYjJFNM=
 github.com/bytedance/sonic/loader v0.1.1/go.mod h1:ncP89zfokxS5LZrJxl5z0UJcsk4M4yY2JpfqGeCtNLU=
-github.com/chaunsin/netease-cloud-music v0.3.1 h1:yRdaNhacHa4/QNyEfc7MMcVH3x5ezssmKNyKECkvIAU=
-github.com/chaunsin/netease-cloud-music v0.3.1/go.mod h1:VQmTX+xI26g4JsYpek4QHqm1PnCVgEy7Tmyk+LX5VaA=
+github.com/chaunsin/netease-cloud-music v0.3.2 h1:NWXL7Jqp9TlCV80FmxmsMJPDJYLOxjIMFS0y3LNu1Q8=
+github.com/chaunsin/netease-cloud-music v0.3.2/go.mod h1:VQmTX+xI26g4JsYpek4QHqm1PnCVgEy7Tmyk+LX5VaA=
 github.com/cheggaaa/pb/v3 v3.1.7 h1:2FsIW307kt7A/rz/ZI2lvPO+v3wKazzE4K/0LtTWsOI=
 github.com/cheggaaa/pb/v3 v3.1.7/go.mod h1:/Ji89zfVPeC/u5j8ukD0MBPHt2bzTYp74lQ7KlgFWTQ=
 github.com/cloudwego/base64x v0.1.4 h1:jwCgWpFanWmN8xoIUHa2rtzmkd5J2plF/dnLS6Xd/0Y=

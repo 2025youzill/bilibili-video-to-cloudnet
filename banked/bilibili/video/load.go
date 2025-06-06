@@ -1,10 +1,10 @@
 package video
 
 import (
-	"banked/client"
-	"banked/constant"
-	"banked/log"
-	"banked/response"
+	"bvtc/constant"
+	"bvtc/log"
+	"bvtc/response"
+	"bvtc/client"
 	"fmt"
 	"net/http"
 	"os"

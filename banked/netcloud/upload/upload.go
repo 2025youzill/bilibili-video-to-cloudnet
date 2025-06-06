@@ -1,9 +1,9 @@
 package upload
 
 import (
-	"banked/client"
-	"banked/constant"
-	"banked/log"
+	"bvtc/client"
+	"bvtc/constant"
+	"bvtc/log"
 	"context"
 	"errors"
 	"fmt"
@@ -169,3 +169,4 @@ func UploadToNetCloud(filename string) error {
 		return errors.New("upload Code is not compare")
 	}
 }
+

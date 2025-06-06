@@ -1,9 +1,9 @@
 package netclogin
 
 import (
-	"banked/client"
-	"banked/log"
-	"banked/response"
+	"bvtc/client"
+	"bvtc/log"
+	"bvtc/response"
 	"context"
 	"net/http"
 

@@ -1,10 +1,10 @@
 package video
 
 import (
-	"banked/constant"
-	"banked/log"
-	"banked/netcloud/upload"
-	"banked/tool/ffmpeg"
+	"bvtc/constant"
+	"bvtc/log"
+	"bvtc/netcloud/upload"
+	"bvtc/tool/ffmpeg"
 	"bytes"
 	"os"
 	"os/exec"
@@ -36,7 +36,7 @@ func TranslateVideoToAudio(filename string) error {
 
 	ffmpegPath, err := ffmpeg.ExtractFFmpeg()
 	if err != nil {
-		log.Logger.Error("提取 FFmpeg 失败", log.Any("err", err))
+		log.Logger.Error("FFmpeg 初始化失败", log.Any("err", err))
 		return err
 	}
 	defer os.Remove(ffmpegPath)
@@ -60,7 +60,7 @@ func convertToMP3(ffmpegPath, inputFile, outputFile string) error {
 	tmpOutput := filepath.Join(constant.Filepath, "temp_audio.mp3")
 	defer os.Remove(tmpOutput) // 确保最后删除临时文件
 
-	// 第一步：生成无元数据的纯音频
+	// 生成无元数据的纯音频
 	step1Cmd := exec.Command(ffmpegPath,
 		"-i", inputFile,
 		"-vn",                 // 禁用视频流
@@ -83,8 +83,8 @@ func convertToMP3(ffmpegPath, inputFile, outputFile string) error {
 		return err
 	}
 
-	// 第二步：添加封面和元数据
-	coverArt := filepath.Join(constant.Filepath, "71ff5ea4-3c19-49ca-858b-fefc5022d84b.jpeg")
+	// 添加元数据
+	coverArt := filepath.Join(constant.Filepath, "71ff5ea4-3c19-49ca-858b-fefc5022d84b.jpeg") // 文件封面（并非歌曲封面）
 	step2Cmd := exec.Command(ffmpegPath,
 		"-i", tmpOutput, // 音频文件
 		"-i", coverArt, // 封面图片
@@ -97,9 +97,9 @@ func convertToMP3(ffmpegPath, inputFile, outputFile string) error {
 		"-metadata", "title=探窗", // 标题
 		"-metadata", "artist=兰音", // 歌手
 		"-metadata", "album=", // 专辑(留空)
-		"-metadata:s:v", "title=Cover", // 封面流标题
-		"-metadata:s:v", "comment=Cover (Front)", // 评论留空
-		"-disposition:v", "attached_pic", // 标记为封面
+		"-metadata:s:v", "title=Cover", 
+		"-metadata:s:v", "comment=Cover (Front)", 
+		"-disposition:v", "attached_pic", 
 		"-y",
 		outputFile,
 	)
@@ -107,9 +107,9 @@ func convertToMP3(ffmpegPath, inputFile, outputFile string) error {
 	step2Cmd.Stderr = &stderrStep2
 	step2Cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 
-	log.Logger.Info("开始添加元数据和封面", log.Any("output", outputFile))
+	log.Logger.Info("开始添加元数据", log.Any("output", outputFile))
 	if err := step2Cmd.Run(); err != nil {
-		log.Logger.Error("第二步添加元数据失败",
+		log.Logger.Error("添加元数据失败",
 			log.Any("err", err),
 			log.Any("stderr", stderrStep2.String()),
 		)

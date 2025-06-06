@@ -1,19 +1,18 @@
 package main
 
 import (
-	"banked/client"
-	"banked/config"
-	"banked/log"
-	"banked/route"
-	swep "banked/tool/spew"
+	"bvtc/client"
+	"bvtc/config"
+	"bvtc/log"
+	"bvtc/route"
+	"bvtc/tool/spew"
 	"net/http"
 	"time"
 )
 
 func main() {
 	log.InitLogger(config.GetConfig().Log.Path, config.GetConfig().Log.Level)
-	swep.InitSpew()
-
+	spew.InitSpew()
 	// 程序启动时初始化网易云接口
 	if err := client.InitNetcloudCli(); err != nil {
 		panic("网易云接口初始化失败: " + err.Error())

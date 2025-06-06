@@ -1,10 +1,10 @@
-module banked
+module bvtc
 
 go 1.24.0
 
 require (
 	github.com/CuteReimu/bilibili/v2 v2.2.1
-	github.com/chaunsin/netease-cloud-music v0.3.1
+	github.com/chaunsin/netease-cloud-music v0.3.2
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 	github.com/dhowden/tag v0.0.0-20240417053706-3d75831295e8
 	github.com/gin-gonic/gin v1.10.1
