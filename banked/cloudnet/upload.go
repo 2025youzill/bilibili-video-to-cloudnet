@@ -1,24 +1,26 @@
-package upload
+package cloudnet
 
 import (
-	"bvtc/client"
-	"bvtc/constant"
-	"bvtc/log"
+	"bvtc/banked/client"
+	"bvtc/banked/constant"
+	"bvtc/banked/log"
 	"context"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/chaunsin/netease-cloud-music/api/weapi"
 	"github.com/chaunsin/netease-cloud-music/pkg/utils"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/dhowden/tag"
 )
 
 var ctx context.Context = context.Background()
 
-func UploadToNetCloud(filename string) error {
+func UploadToNetCloud(filename string, splaylist bool, pid int64) error {
 	// 检查文件是否存在
 	ext := filepath.Ext(filename)
 	bitrate := constant.BitRate
@@ -81,6 +83,8 @@ func UploadToNetCloud(filename string) error {
 		return errors.New("token Code is not compare")
 	}
 
+	spew.Dump("resp.SongId : ", resp.SongId)
+
 	// 获取上传凭证
 	var allocReq = weapi.CloudTokenAllocReq{
 		Bucket:     "", // jd-musicrep-privatecloud-audio-public
@@ -126,7 +130,6 @@ func UploadToNetCloud(filename string) error {
 		log.Logger.Error("fail to upload", log.Any("err : ", err))
 		return err
 	}
-
 	var InfoReq = weapi.CloudInfoReq{
 		Md5:        md5,
 		SongId:     resp.SongId,
@@ -137,6 +140,7 @@ func UploadToNetCloud(filename string) error {
 		Bitrate:    bitrate,
 		ResourceId: allocResp.ResourceID,
 	}
+	spew.Dump("InfoReq : ", InfoReq)
 	infoResp, err := api.CloudInfo(ctx, &InfoReq)
 	if err != nil {
 		log.Logger.Error("fail to upload music imformation", log.Any("err : ", err))
@@ -160,13 +164,28 @@ func UploadToNetCloud(filename string) error {
 	switch publishResp.Code {
 	case 200:
 		log.Logger.Info("success to upload", log.Any("filename : ", filename))
-		return nil
 	case 201:
 		log.Logger.Info("the music already exists", log.Any("filename : ", filename))
-		return errors.New("the music already exists")
 	default:
 		log.Logger.Error("fail to publish", log.Any("filename : ", filename))
 		return errors.New("upload Code is not compare")
 	}
-}
 
+	// 判断是否要加入歌单还是只保存网盘
+	if splaylist {
+		trackId, err := strconv.ParseInt(resp.SongId, 10, 64)
+		if err != nil {
+			log.Logger.Error("转换歌曲ID失败", log.Any("err", err))
+			return err
+		}
+		err = UploadToPlaylist(UploadToMusicReq{
+			Pid:      pid,
+			TrackIds: trackId,
+		})
+		if err != nil {
+			log.Logger.Error("添加到歌单失败", log.Any("err", err))
+			return err
+		}
+	}
+	return nil
+}

@@ -1,10 +1,10 @@
-package video
+package bilibili
 
 import (
-	"bvtc/constant"
-	"bvtc/log"
-	"bvtc/response"
-	"bvtc/client"
+	"bvtc/banked/client"
+	"bvtc/banked/constant"
+	"bvtc/banked/log"
+	"bvtc/banked/response"
 	"fmt"
 	"net/http"
 	"os"
@@ -16,8 +16,10 @@ import (
 )
 
 type VideoStreamReq struct {
-	Bvid string `json:"bvid,omitempty" request:"query,omitempty"` // 稿件 bvid。avid 与 bvid 任选一个
-	Cid  int    `json:"cid"`                                      // 视频 cid
+	Bvid      string `json:"bvid,omitempty" request:"query,omitempty"` // 稿件 bvid。avid 与 bvid 任选一个
+	Cid       int    `json:"cid"`                                      // 视频 cid
+	Splaylist bool   `json:"splaylist"`                                // 是否上传到歌单
+	Pid       int64  `json:"pid"`                                      // 歌单 id
 }
 
 func LoadMP4(ctx *gin.Context) {
@@ -80,7 +82,7 @@ func LoadMP4(ctx *gin.Context) {
 	}
 
 	// 转化为mp3
-	err = TranslateVideoToAudio(filename)
+	err = TranslateVideoToAudio(filename, req.Splaylist, req.Pid)
 	if err != nil {
 		log.Logger.Error("转化mp3失败", log.Any("err : ", err))
 		ctx.JSON(http.StatusInternalServerError, response.FailMsg("转化mp3失败"))

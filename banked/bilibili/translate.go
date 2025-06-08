@@ -1,10 +1,10 @@
-package video
+package bilibili
 
 import (
-	"bvtc/constant"
-	"bvtc/log"
-	"bvtc/netcloud/upload"
-	"bvtc/tool/ffmpeg"
+	"bvtc/banked/cloudnet"
+	"bvtc/banked/constant"
+	"bvtc/banked/log"
+	"bvtc/banked/tool/ffmpeg"
 	"bytes"
 	"os"
 	"os/exec"
@@ -18,7 +18,7 @@ type AudioReq struct {
 	Artist string
 }
 
-func TranslateVideoToAudio(filename string) error {
+func TranslateVideoToAudio(filename string, splaylist bool, pid int64) error {
 	currentDir, err := os.Getwd()
 	if err != nil {
 		log.Logger.Error("获取当前目录失败", log.Any("err", err))
@@ -46,7 +46,7 @@ func TranslateVideoToAudio(filename string) error {
 		return err
 	}
 
-	err = upload.UploadToNetCloud(outputFile)
+	err = cloudnet.UploadToNetCloud(outputFile, splaylist, pid)
 	if err != nil {
 		log.Logger.Error("上传失败", log.Any("err", err))
 		return err
@@ -97,9 +97,9 @@ func convertToMP3(ffmpegPath, inputFile, outputFile string) error {
 		"-metadata", "title=探窗", // 标题
 		"-metadata", "artist=兰音", // 歌手
 		"-metadata", "album=", // 专辑(留空)
-		"-metadata:s:v", "title=Cover", 
-		"-metadata:s:v", "comment=Cover (Front)", 
-		"-disposition:v", "attached_pic", 
+		"-metadata:s:v", "title=Cover",
+		"-metadata:s:v", "comment=Cover (Front)",
+		"-disposition:v", "attached_pic",
 		"-y",
 		outputFile,
 	)

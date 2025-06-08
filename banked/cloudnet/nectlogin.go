@@ -1,9 +1,9 @@
-package netclogin
+package cloudnet
 
 import (
-	"bvtc/client"
-	"bvtc/log"
-	"bvtc/response"
+	"bvtc/banked/client"
+	"bvtc/banked/log"
+	"bvtc/banked/response"
 	"context"
 	"net/http"
 
@@ -19,7 +19,7 @@ type LoginReq struct {
 func SendByPhone(ctx *gin.Context) {
 	var req LoginReq
 	err := ctx.ShouldBindJSON(&req)
-	if err!= nil {
+	if err != nil {
 		log.Logger.Error("fail to bind json", log.Any("err : ", err))
 		ctx.JSON(http.StatusBadRequest, response.FailMsg("fail to bind json"))
 		return
@@ -37,7 +37,7 @@ func SendByPhone(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, response.FailMsg("client fail to init"))
 		return
 	}
-	
+
 	//发送验证码
 	resp, err := api.SendSMS(ctx, &weapi.SendSMSReq{Cellphone: req.Phone, CtCode: req.CtCode})
 	if err != nil {

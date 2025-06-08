@@ -1,7 +1,7 @@
 package client
 
 import (
-	"bvtc/config"
+	"bvtc/banked/config"
 	"encoding/json"
 	"errors"
 	"fmt"

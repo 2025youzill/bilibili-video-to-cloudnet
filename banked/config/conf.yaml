@@ -1,5 +1,5 @@
 appName: "bilibili-video-to-netcloud"
-log:
+log:  # 日志配置
   level: "debug"
   path: "/var/log/app.log"
 api:
@@ -7,12 +7,15 @@ api:
   timeout: 0s # 使用时间单位（如 "30s", "500ms"）
   retry: 0 # 使用整数
   cookie:
-    filepath: "./netcloud/data/cookie.json"
+    filepath: "./netcloud/data/cookie.json" # 用户数据存储位置
     interval: 0s
-spew:
+spew: # 深层打印
   indent: "  "
-  maxdepth: 2
+  maxdepth: 4
   disablemethods: false
   disablepointermethods: true
   continueonmethod: false
   sortkeys: false
+music:
+  bits: 320000 # 比特率
+  

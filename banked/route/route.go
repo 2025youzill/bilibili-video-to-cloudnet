@@ -1,10 +1,10 @@
 package route
 
 import (
-	"banked/bilibili/video"
-	"banked/log"
-	"banked/netcloud/netclogin"
-	"banked/response"
+	"bvtc/banked/bilibili"
+	"bvtc/banked/log"
+	"bvtc/banked/cloudnet"
+	"bvtc/banked/response"
 
 	"net/http"
 	"runtime"
@@ -21,11 +21,12 @@ func NewRouter() *gin.Engine {
 
 	group := server.Group("")
 	{
-		group.GET("/netcloud/login", netclogin.SendByPhone)           // 发送验证码
-		group.POST("/netcloud/login/verify", netclogin.VerifyCaptcha) // 验证验证码
-		group.GET("/netcloud/login/check", netclogin.CheckCookie)     // 检查登陆状态
+		group.GET("/netcloud/login", cloudnet.SendByPhone)           // 发送验证码
+		group.POST("/netcloud/login/verify", cloudnet.VerifyCaptcha) // 验证验证码
+		group.GET("/netcloud/login/check", cloudnet.CheckCookie)     // 检查登陆状态
+		group.GET("netcloud/playlist", cloudnet.ShowPlaylist)
 
-		group.POST("/bilibili/video/load", video.LoadMP4)
+		group.POST("/bilibili/video/load", bilibili.LoadMP4)
 	}
 	return server
 }

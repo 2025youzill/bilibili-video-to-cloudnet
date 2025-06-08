@@ -1,11 +1,11 @@
 package main
 
 import (
-	"bvtc/client"
-	"bvtc/config"
-	"bvtc/log"
-	"bvtc/route"
-	"bvtc/tool/spew"
+	"bvtc/banked/client"
+	"bvtc/banked/config"
+	"bvtc/banked/log"
+	"bvtc/banked/route"
+	"bvtc/banked/tool/spew"
 	"net/http"
 	"time"
 )
