@@ -1,13 +1,14 @@
 package client
 
 import (
-	"bvtc/banked/config"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
+
+	"bvtc/config"
 
 	"github.com/CuteReimu/bilibili/v2"
 	"github.com/chaunsin/netease-cloud-music/api"
@@ -91,10 +92,19 @@ func GetNetcloudApi() (*weapi.Api, error) {
 	return netcApi, nil
 }
 
-// 暴露初始化方法给主程序
+// 游客访问bilibili客户端
 func InitBiliCli() error {
 	// 获取配置信息
 	biliCli = bilibili.NewAnonymousClient()
+	if biliCli == nil {
+		return errors.New("failed to create client")
+	}
+	return nil
+}
+
+// 登录bilibili客户端
+func InitBiliLoginCli() error {
+	biliCli = bilibili.New()
 	if biliCli == nil {
 		return errors.New("failed to create client")
 	}

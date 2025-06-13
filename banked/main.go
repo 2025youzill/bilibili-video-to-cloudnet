@@ -1,13 +1,14 @@
 package main
 
 import (
-	"bvtc/banked/client"
-	"bvtc/banked/config"
-	"bvtc/banked/log"
-	"bvtc/banked/route"
-	"bvtc/banked/tool/spew"
 	"net/http"
 	"time"
+
+	"bvtc/client"
+	"bvtc/config"
+	"bvtc/log"
+	"bvtc/route"
+	"bvtc/tool/spew"
 )
 
 func main() {
@@ -25,8 +26,8 @@ func main() {
 	s := &http.Server{
 		Addr:           ":8080",
 		Handler:        newRouter,
-		ReadTimeout:    10 * time.Second,
-		WriteTimeout:   10 * time.Second,
+		ReadTimeout:    300 * time.Second,
+		WriteTimeout:   300 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 	}
 	if err := s.ListenAndServe(); err != nil {

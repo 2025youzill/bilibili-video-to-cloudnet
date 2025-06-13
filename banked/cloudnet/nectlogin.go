@@ -1,9 +1,9 @@
 package cloudnet
 
 import (
-	"bvtc/banked/client"
-	"bvtc/banked/log"
-	"bvtc/banked/response"
+	"bvtc/client"
+	"bvtc/log"
+	"bvtc/response"
 	"context"
 	"net/http"
 
@@ -128,7 +128,7 @@ func CheckCookie(ctx *gin.Context) {
 	}
 
 	status := api.NeedLogin(context.Background())
-	if status == true {
+	if status {
 		log.Logger.Error("user need login")
 		ctx.JSON(http.StatusBadRequest, response.FailMsg("user need login"))
 		return
@@ -136,4 +136,5 @@ func CheckCookie(ctx *gin.Context) {
 
 	log.Logger.Info("user already login")
 	ctx.JSON(http.StatusOK, response.SuccessMsg("user already login"))
+	
 }

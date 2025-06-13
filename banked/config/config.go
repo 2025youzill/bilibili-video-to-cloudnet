@@ -13,6 +13,7 @@ type YamlConfig struct {
 	Redis   RedisConfig
 	Jwt     JwtConfig
 	Spew    SpewConfig
+	Music   MusicConfig
 }
 
 type LogConfig struct {
@@ -51,6 +52,11 @@ type SpewConfig struct {
 	DisablePointerMethods bool
 	ContinueOnMethod      bool
 	SortKeys              bool
+}
+
+type MusicConfig struct {
+	Bits        int   `mapstructure:"bits"`
+	Concurrency int64 `mapstructure:"concurrency"`
 }
 
 var c YamlConfig

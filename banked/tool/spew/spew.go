@@ -1,7 +1,7 @@
 package spew
 
 import (
-	"bvtc/banked/config"
+	"bvtc/config"
 
 	"github.com/davecgh/go-spew/spew"
 )

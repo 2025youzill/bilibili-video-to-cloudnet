@@ -1,12 +1,14 @@
 package cloudnet
 
 import (
-	"bvtc/banked/client"
-	"bvtc/banked/log"
-	"bvtc/banked/response"
 	"context"
+	"errors"
 	"net/http"
 	"strconv"
+
+	"bvtc/client"
+	"bvtc/log"
+	"bvtc/response"
 
 	"github.com/chaunsin/netease-cloud-music/api/types"
 	"github.com/chaunsin/netease-cloud-music/api/weapi"
@@ -41,7 +43,7 @@ func ShowPlaylist(ctx *gin.Context) {
 		return
 	}
 	var resp []ShowPlaylistResp
-	for i, _ := range playlist.Playlist {
+	for i := range playlist.Playlist {
 		if playlist.Playlist[i].Creator.Nickname == username {
 			resp = append(resp, ShowPlaylistResp{
 				PName: playlist.Playlist[i].Name,
@@ -58,14 +60,16 @@ type UploadToMusicReq struct {
 	TrackIds int64
 }
 
-func UploadToPlaylist(UploadToMusicReq) error {
+func UploadToPlaylist(req UploadToMusicReq) error {
 	api, _ := client.GetNetcloudApi()
-	var req UploadToMusicReq
-
 	resp, err := api.PlaylistAddOrDel(context.Background(), &weapi.PlaylistAddOrDelReq{Op: "add", Pid: req.Pid, TrackIds: types.IntsString{req.TrackIds}, Imme: true})
 	if err != nil {
 		log.Logger.Error("fail", log.Any("err", err))
-		return err
+		return errors.New("fail to upload to playlist")
+	}
+	if resp.Code != 200 {
+		log.Logger.Error("fail to upload to playlist", log.Any("resp", resp))
+		return errors.New("fail to upload to playlist")
 	}
 	log.Logger.Info("success to upload to playlist", log.Any("resp", resp))
 	return nil
