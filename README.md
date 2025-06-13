@@ -50,15 +50,13 @@
   ```
 - 端口将在 http://localhost:3000 开放
 
-##  :hammer_and_wrench:TODO
+## :hammer_and_wrench:TODO
 
-- 从网盘直接保存到歌单，省去保存到歌单的步骤（对于api接口尚未实现）
-- 对up主视频进行列表展示，方便批量转存
-- 对歌曲歌词，封面等信息的完善（网易云限制严重，只能等大佬发现方法了）
+- 保存的歌曲没有歌词，对歌词功能的完善（没有什么想法，只能等大佬发现方法了）
 
 ## ❤️ 鸣谢
 
-- [chaunsin/netease-cloud-music: 网易云音乐 Golang API 接口 + 命令行工具套件(签到 + 音乐合伙人 + 云盘 + 下载Hi-Res音质 + 刷歌等) + 一键完成任务](https://github.com/chaunsin/netease-cloud-music)
+- [✨ 网易云音乐 Golang 🎵](https://github.com/chaunsin/netease-cloud-music)
 - [CuteReimu/bilibili: 哔哩哔哩bilibili的API的Go SDK](https://github.com/CuteReimu/bilibili)
 - [FFmpeg](https://ffmpeg.org/)
 
