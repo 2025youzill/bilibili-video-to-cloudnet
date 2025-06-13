@@ -1,4 +1,4 @@
-appName: "bilibili-video-to-netcloud"
+appName: "bilibili-video-to-cloudnet"
 log: # 日志配置
   level: "debug"
   path: "/var/log/app.log"
