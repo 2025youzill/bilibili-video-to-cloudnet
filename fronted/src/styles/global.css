@@ -1,0 +1,20 @@
+.custom-error-message {
+	position: fixed !important;
+	top: 20vh !important;
+	left: 50% !important;
+	transform: translateX(-50%) !important;
+	z-index: 9999 !important;
+	background-color: #fff2f0 !important;
+	border: 1px solid #ffccc7 !important;
+	padding: 8px 16px !important;
+	border-radius: 4px !important;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+.custom-error-message .ant-message-notice-content {
+	background-color: #fff2f0 !important;
+	border: 1px solid #ffccc7 !important;
+	padding: 8px 16px !important;
+	border-radius: 4px !important;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+}

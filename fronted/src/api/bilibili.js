@@ -1,9 +1,11 @@
-import axiosInstance from '../axiosInstance';
+import axiosInstance from "../axiosInstance";
 
 // 根据BVID获取视频→转音频→上传网易云（后端需提供此接口）
-export const uploadToNetCloudByBVID = async (bvid) => {
-  const response = await axiosInstance.post('/bilibili/video/load', {
-    bvid // 直接传递JSON对象，键名与后端VideoStreamReq的json标签一致（"bvid"）
-  });
-  return response.data;
+export const uploadToNetCloudByBVID = async (bvidList, splaylist = false, pid = "") => {
+	const response = await axiosInstance.post("/bilibili/load", {
+		bvid: bvidList, // 直接传递bvid数组
+		splaylist,
+		pid: pid ? parseInt(pid) : undefined,
+	});
+	return response.data;
 };
