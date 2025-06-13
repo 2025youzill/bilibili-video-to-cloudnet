@@ -16,7 +16,7 @@ BVTC（Bilibili-Video-To-CloudNet）是一个将 B 站视频转换为 MP4 格式
 ## :open_book:使用说明
 
 - 使用内嵌 ffmpeg，下载链接：[ffmpeg-master-latest-win64-gpl.zip](https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip)，解压，并将 ffmpeg.exe 添加到 banked/tool/ffmpeg
-- go 程序运行使用 air 运行（可热重载），相关信息查看相关 git 仓库：[☁️ Live reload for Go apps](https://github.com/air-verse/air)
+- go 程序运行使用 air 运行（可热重载），相关信息可查看 git 仓库：[☁️ Live reload for Go apps](https://github.com/air-verse/air)
 
 ## :gear:运行
 
