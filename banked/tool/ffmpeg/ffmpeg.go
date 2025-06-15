@@ -1,40 +1,56 @@
 package ffmpeg
 
 import (
-	_ "embed"
 	"fmt"
-	"math/rand/v2"
 	"os"
 	"path/filepath"
-	"time"
+	"runtime"
+
+	"bvtc/tool/randomstring"
 )
 
-//go:embed ffmpeg.exe
-var ffmpegBin []byte
-
-// 生成随机字符串
-func randomString(n int) string {
-	// 1. 创建独立随机源（避免全局锁，并发安全）
-	seed := time.Now().UnixNano()
-	rng := rand.New(rand.NewPCG(uint64(seed), uint64(seed>>32)))
-
-	// 2. 定义字符集
-	const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	b := make([]byte, n)
-
-	// 3. 生成随机字符
-	for i := range b {
-		b[i] = letters[rng.IntN(len(letters))]
+// 获取操作系统特定的FFmpeg二进制数据
+func getFFmpegBin() ([]byte, error) {
+	// 根据操作系统确定文件名
+	filename := "ffmpeg"
+	if runtime.GOOS == "windows" {
+		filename = "ffmpeg.exe"
 	}
-	return string(b)
+	if runtime.GOOS == "linux"{
+		filename  = "ffmpeg"
+	}
+	// 构建文件路径（相对于项目根目录）
+	filePath := filepath.Join("banked", "tool", "ffmpeg", filename)
+	
+	// 读取文件内容
+	binData, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("读取FFmpeg二进制文件失败: %v", err)
+	}
+	
+	return binData, nil
 }
+
 
 // 提取 FFmpeg 到临时文件
 func ExtractFFmpeg() (string, error) {
+	// 获取二进制数据
+	binData, err := getFFmpegBin()
+	if err != nil {
+		return "", err
+	}
+	
 	// 生成唯一的临时文件名（避免多用户冲突）
-	ffmpegTmpExe := filepath.Join(os.TempDir(), "ffmpeg_"+randomString(8)+".exe")
+	filename := "ffmpeg"
+	if runtime.GOOS == "windows" {
+		filename = "ffmpeg_" + randomstring.GenerateRandomString(8) + ".exe"
+	} else {
+		filename = "ffmpeg_" + randomstring.GenerateRandomString(8)
+	}
+	ffmpegTmpExe := filepath.Join(os.TempDir(), filename)
+	
 	// 写入二进制数据
-	if err := os.WriteFile(ffmpegTmpExe, ffmpegBin, 0755); err != nil {
+	if err := os.WriteFile(ffmpegTmpExe, binData, 0o755); err != nil {
 		return "", fmt.Errorf("写入临时文件失败: %v", err)
 	}
 	return ffmpegTmpExe, nil

@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"syscall"
 
 	"bvtc/cloudnet"
 	"bvtc/constant"
@@ -85,7 +84,6 @@ func convertToMP3(ffmpegPath, inputFile, outputFile string, req AudioReq) error 
 	)
 	var stderrStep1 bytes.Buffer
 	step1Cmd.Stderr = &stderrStep1
-	step1Cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 
 	log.Logger.Info("开始提取纯音频", log.Any("input", inputFile), log.Any("tmpOutput", tmpOutput))
 	if err := step1Cmd.Run(); err != nil {
@@ -118,7 +116,6 @@ func convertToMP3(ffmpegPath, inputFile, outputFile string, req AudioReq) error 
 	)
 	var stderrStep2 bytes.Buffer
 	step2Cmd.Stderr = &stderrStep2
-	step2Cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 
 	log.Logger.Info("开始添加元数据", log.Any("output", outputFile))
 	if err := step2Cmd.Run(); err != nil {

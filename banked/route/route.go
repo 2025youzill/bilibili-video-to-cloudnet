@@ -32,6 +32,9 @@ func NewRouter() *gin.Engine {
 		// 暂时不用下面接口
 		group.GET("/bilibili/login", bilibili.BiliLogin)
 		group.GET("/bilibili/login/check", bilibili.BiliLoginWithCookie)
+
+		// 健康检查
+		group.GET("/health", HealthCheck)
 	}
 	return server
 }
@@ -77,4 +80,9 @@ func Recovery(c *gin.Context) {
 		}
 	}()
 	c.Next()
+}
+
+// HealthCheck 健康检查处理函数
+func HealthCheck(c *gin.Context) {
+	c.JSON(http.StatusOK, response.SuccessMsg("Server is healthy"))
 }
