@@ -1,7 +1,7 @@
 appName: "bilibili-video-to-cloudnet"
 log: # 日志配置
   level: "debug"
-  path: "/var/log/app.log"
+  path: "log/logs/app.log"
 api:
   debug: false
   timeout: 0s # 使用时间单位（如 "30s", "500ms"）
