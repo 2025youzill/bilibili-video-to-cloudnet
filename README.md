@@ -9,14 +9,14 @@
 ## :blue_book:项目介绍
 
 - BVTC（Bilibili-Video-To-CloudNet）是一个将 B 站视频转换为 MP4 格式并上传到网易云的网站，输入 Bvid 和登录网易云后，后端采用 **API** 接口抓取视频，FFmpeg 提取音频，然后通过网易云网盘上传到歌单。
-- 如果你在 b 站有喜欢的音乐但是网易云没有，欢迎使用 BVTC，如果你有喜欢的 AMSR 但是网易云没有，欢迎使用 BVTC，~~如果你有喜欢的美女视频，欢迎分享给我:point_up:~~
-- 如果有帮助到你或者你很喜欢的话，给鼠鼠一个 star:star2:再走吧
+- 如果你在 b 站有喜欢的音乐但是网易云没有，欢迎使用 BVTC，如果你有喜欢的 AMSR 但是网易云没有，欢迎使用 BVTC，~~如果你有喜欢的美女视频，欢迎分享给我 :point_up: ~~
+- 如果有帮助到你或者你很喜欢的话，给鼠鼠一个 star:star2: 再走吧
 - 如果你发现了什么问题或者有任何改进的建议以及想要新增的功能，不要害羞，无需吝啬你的 [issue](https://github.com/2025youzill/bilibili-video-to-cloudnet/issues/new) 和 pr ,如果你不清楚如何提交，可以参考 [Github Docs](https://docs.github.com/en/pull-requests)(建议是先 fork 再提交会方便些)。
 
 ## :open_book:使用说明
 
 - 后端使用 go 版本为1.24.0，前端使用 npm 版本为10.9.0，node 版本为22.12.0，其余具体库版本见 go.mod 和 package.json
-- 使用内嵌 ffmpeg，可自行下载（会快一些）：[ffmpeg-master-latest-win64-gpl.zip](https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip)，解压，并将 ffmpeg.exe 添加到 banked/tool/ffmpeg ，或者用下边运行步骤中的 Makefile 下载(注意！该项目为 windows 端自用，如果想在 linux 运行，修改 [ffmpeg.go](https://github.com/2025youzill/bilibili-video-to-cloudnet/blob/main/banked/tool/ffmpeg/ffmpeg.go#L12-L13) 文件，并下载对应 linux 可用的 ffmpeg 二进制文件)
+- 使用内嵌 ffmpeg，可自行下载（会快一些）：[ffmpeg-master-latest-win64-gpl.zip](https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip)，解压，并将 ffmpeg.exe 添加到 banked/tool/ffmpeg ，或者用下边运行步骤中的 Makefile 下载
 - go 程序推荐使用 air 运行（可热重载），相关信息可查看 git 仓库：[☁️ Live reload for Go apps](https://github.com/air-verse/air)
 
 ## :gear:运行
