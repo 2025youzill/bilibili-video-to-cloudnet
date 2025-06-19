@@ -21,46 +21,64 @@
 
 ## :gear:运行
 
-### 后端
+### Docker Compose 部署
+- 在根目录运行 docker-compose.yml 构建项目镜像
+  ```bash
+  docker compose up -d --build
+  ```
+- 如果直接运行拉取不到所需镜像，可以先拉取基础镜像再构建项目镜像
+  ```bash
+  docker pull golang:1.24-alpine
+  docker pull ubuntu:22.04
+  docker pull node:22-alpine
+  docker pull nginx:alpine
+  docker compose up -d --build
+  ```
 
+### Windows 部署
+
+#### 后端部署
+
+- 进入 banked 文件夹
+  ```bash
+  cd banked
+  ```
 - 运行 Makefile 安装 ffmpeg.exe
   ```bash
   make setup-ffmpeg
   ```
 - go install 安装 air
-  ```
-  go install github.com/air-verse/air@latest
-  ```
-- 进入 banked 文件夹
   ```bash
-  cd banked
+  go install github.com/air-verse/air@latest
   ```
 - 运行程序
   ```bash
   air
   ```
 
-### 前端
+#### 前端部署
 
 - 进入 fronted 文件夹
-  ```
+  ```bash
   cd fronted
   ```
 - 安装依赖
-  ```
+  ```bash
   npm install
   ```
 - 运行程序
-  ```
+  ```bash
   npm start
   ```
-- 端口将在 http://localhost:3000 开放
+## 🎉启动成功
+  端口将在本地 http://localhost:8000 开放
 
 ## :hammer_and_wrench:TODO
 
+- [x]  docker部署
 - [ ]  保存的歌曲没有歌词，对歌词功能的完善（现在不支持读取 lrc 文件，没有什么想法，只能等大佬发现方法了）
-- [ ]  添加docker部署
-- [ ]  添加服务器部署
+- [ ]  load接口支持多文件上传，由于http超时限制，过长时间的上传会返回503
+- [ ]  服务器部署
 
 ## ❤️ 鸣谢
 
@@ -68,6 +86,7 @@
 - [bilibili 的 API 的 Go SDK](https://github.com/CuteReimu/bilibili)
 - [FFmpeg](https://ffmpeg.org/)
 - [FFmpeg Static Auto-Builds](https://github.com/BtbN/FFmpeg-Builds)
+  
   以及本项目所依赖的所有优秀的库。
 
 ## ⚠️ 声明
