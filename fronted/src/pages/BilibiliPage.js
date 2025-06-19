@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Input, Button, List, message, Modal, Checkbox, Space, Pagination, App } from "antd";
 import { useNavigate } from "react-router-dom";
-import axios from "../axiosInstance";
+import axiosInstance from "../axiosInstance";
 
 const BilibiliPage = () => {
 	const [videoId, setVideoId] = useState("");
@@ -13,7 +13,11 @@ const BilibiliPage = () => {
 	const [selectedVideos, setSelectedVideos] = useState([]);
 	const [uploading, setUploading] = useState(false);
 	const [currentPage, setCurrentPage] = useState(1);
-	const pageSize = 10;
+	const [pageSize, setPageSize] = useState(10);
+	const [total, setTotal] = useState(0);
+	const [searchValue, setSearchValue] = useState("");
+	const [isLoggedIn, setIsLoggedIn] = useState(false);
+	const [userInfo, setUserInfo] = useState(null);
 	const navigate = useNavigate();
 	const { message: messageApi } = App.useApp();
 
@@ -28,7 +32,7 @@ const BilibiliPage = () => {
 		}
 		setLoading(true);
 		try {
-			let url = "/bilibili/list";
+			let url = "bilibili/list";
 			if (videoId.toLowerCase().startsWith("av")) {
 				const avid = parseInt(videoId.toLowerCase().replace("av", ""));
 				url += `?avid=${avid}`;
@@ -41,7 +45,7 @@ const BilibiliPage = () => {
 			}
 
 			console.log("请求URL:", url);
-			const response = await axios.get(url);
+			const response = await axiosInstance.get(url);
 			console.log("响应数据:", response.data);
 			setVideoInfo(response.data.data);
 			// 重置选中的视频
@@ -79,13 +83,13 @@ const BilibiliPage = () => {
 		}
 
 		try {
-			const cloudCheck = await axios.get("/netcloud/login/check");
+			const cloudCheck = await axiosInstance.get("netcloud/login/check");
 			if (!cloudCheck.data.data) {
 				setIsLoginModalVisible(true);
 				return;
 			}
 
-			const response = await axios.get("/netcloud/playlist");
+			const response = await axiosInstance.get("netcloud/playlist");
 			if (response.data.code === 200) {
 				setPlaylists(response.data.data);
 				setIsModalVisible(true);
@@ -126,6 +130,83 @@ const BilibiliPage = () => {
 		if (!videoInfo?.video_list) return [];
 		const startIndex = (currentPage - 1) * pageSize;
 		return videoInfo.video_list.slice(1).slice(startIndex, startIndex + pageSize);
+	};
+
+	const handleUpload = async (playlist) => {
+		console.log("开始执行上传函数");
+		let uploadModal = null;
+		try {
+			console.log("开始上传，选中的视频:", selectedVideos);
+			if (!selectedVideos || selectedVideos.length === 0) {
+				message.error("请先选择要上传的视频");
+				return;
+			}
+			setUploading(true);
+			// 显示上传中的Modal
+			uploadModal = Modal.info({
+				title: "上传中，请稍等...(๑´ڡ`๑)",
+				icon: null,
+				okButtonProps: { style: { display: "none" } },
+				cancelButtonProps: { style: { display: "none" } },
+				closable: false,
+				maskClosable: false,
+			});
+
+			const requestData = {
+				bvid: selectedVideos,
+				splaylist: !!playlist.pid,
+				pid: playlist.pid || undefined,
+			};
+			console.log("准备发送请求，数据:", requestData);
+			console.log("请求URL:", "bilibili/load");
+
+			// 添加请求前的日志
+			console.log("发送请求前的状态:", {
+				selectedVideos,
+				playlist,
+				requestData,
+				uploading: uploading,
+			});
+
+			const response = await axiosInstance.post("bilibili/load", requestData);
+			console.log("上传响应:", response.data);
+			// 关闭上传中的Modal
+			if (uploadModal) {
+				uploadModal.destroy();
+			}
+			if (response.data.code === 200) {
+				const data = response.data.data;
+				if (data.failed && data.failed.length > 0) {
+					const failedMsgs = data.failed.map((f) => `《${f.title}》处理失败: ${f.error}`).join("\n");
+					message.error(`部分视频上传失败 (ŏ﹏ŏ、)\n${failedMsgs}`);
+				} else if (data.success && data.success.length > 0) {
+					message.success("所有音乐上传成功 (≧▽≦)");
+				}
+			} else {
+				message.error(`上传失败 (ŏ﹏ŏ、)۶: ${response.data.msg || "未知错误"}`);
+			}
+		} catch (error) {
+			console.error("上传错误:", error);
+			console.error("错误详情:", {
+				message: error.message,
+				code: error.code,
+				response: error.response,
+				config: error.config,
+			});
+			// 关闭上传中的Modal
+			if (uploadModal) {
+				uploadModal.destroy();
+			}
+			if (error.code === "ERR_NETWORK") {
+				message.error("网络连接失败，请检查网络连接或稍后重试 (ŏ﹏ŏ、)۶");
+			} else if (error.code === "ECONNABORTED") {
+				message.error("上传超时，请检查网络连接或稍后重试 (ŏ﹏ŏ、)۶");
+			} else {
+				message.error(`上传失败 (ŏ﹏ŏ、)۶: ${error.response?.data?.msg || error.message}`);
+			}
+		} finally {
+			setUploading(false);
+		}
 	};
 
 	return (
@@ -269,70 +350,18 @@ const BilibiliPage = () => {
 									onClick={() => {
 										console.log("选择歌单:", playlist);
 										setIsModalVisible(false);
-										const confirmModal = message.confirm({
-											title: "确认上传",
-											content: `是否确认上传到${playlist.pname || "云盘"}？`,
-											okText: "确认",
-											cancelText: "取消",
-											onOk: async () => {
-												console.log("开始上传，选中的视频:", selectedVideos);
-												setUploading(true);
-												// 关闭确认弹框
-												confirmModal.destroy();
-												// 显示上传中的Modal
-												const uploadModal = message.info({
-													title: "上传中，请稍等...(๑´ڡ`๑)",
-													icon: null,
-													okButtonProps: { style: { display: "none" } },
-													cancelButtonProps: { style: { display: "none" } },
-													closable: false,
-													maskClosable: false,
-												});
-												try {
-													const requestData = {
-														bvid: selectedVideos,
-														splaylist: !!playlist.pid,
-														pid: playlist.pid || undefined,
-													};
-													console.log("发送请求数据:", requestData);
-													const response = await axios.post("/bilibili/load", requestData);
-													console.log("上传响应:", response.data);
-													// 关闭上传中的Modal
-													uploadModal.destroy();
-													if (response.data.code === 200) {
-														const data = response.data.data;
-														if (data.failed && data.failed.length > 0) {
-															const failedMsgs = data.failed
-																.map((f) => `《${f.title}》处理失败: ${f.error}`)
-																.join("\n");
-															message.error(`部分视频上传失败 (ŏ﹏ŏ、)\n${failedMsgs}`);
-														} else if (data.success && data.success.length > 0) {
-															message.success("所有音乐上传成功 (≧▽≦)");
-														}
-													} else {
-														message.error(`上传失败 (ŏ﹏ŏ、)۶: ${response.data.msg || "未知错误"}`);
-													}
-												} catch (error) {
-													console.error("上传错误:", error);
-													// 关闭上传中的Modal
-													uploadModal.destroy();
-													if (error.code === "ERR_NETWORK") {
-														message.error("网络连接失败，请检查网络连接或稍后重试 (ŏ﹏ŏ、)۶");
-													} else if (error.code === "ECONNABORTED") {
-														message.error("上传超时，请检查网络连接或稍后重试 (ŏ﹏ŏ、)۶");
-													} else {
-														message.error(`上传失败 (ŏ﹏ŏ、)۶: ${error.response?.data?.msg || error.message}`);
-													}
-												} finally {
-													setUploading(false);
-												}
-											},
-											onCancel: () => {
-												console.log("取消上传，返回歌单选择");
-												setIsModalVisible(true);
-											},
-										});
-										console.log("确认弹框已创建");
+
+										// 使用 window.confirm 替代 Modal.confirm
+										const confirmed = window.confirm(`是否确认上传到${playlist.pname || "云盘"}？`);
+										console.log("确认结果:", confirmed);
+
+										if (confirmed) {
+											console.log("用户确认上传");
+											handleUpload(playlist);
+										} else {
+											console.log("用户取消上传");
+											setIsModalVisible(true);
+										}
 									}}
 								>
 									选择

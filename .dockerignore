@@ -1,0 +1,7 @@
+**/node_modules
+*.md
+*.log
+docker-compose.yml
+.gitignore
+.git
+banked/tool/ffmpeg/ffmpeg.exe

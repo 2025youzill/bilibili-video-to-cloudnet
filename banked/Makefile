@@ -2,8 +2,8 @@
 FFMPEG_WIN_URL := https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip
 FFMPEG_LINUX_URL := https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz
 
-# 使用环境变量设置 FFMPEG_DIR，默认为 banked/tool/ffmpeg
-FFMPEG_DIR ?= banked/tool/ffmpeg
+# 使用环境变量设置 FFMPEG_DIR，默认为 tool/ffmpeg
+FFMPEG_DIR ?= tool/ffmpeg
 
 # 平台检测
 UNAME_S := $(shell uname -s)

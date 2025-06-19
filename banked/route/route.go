@@ -19,7 +19,10 @@ func NewRouter() *gin.Engine {
 	server.Use(Cors())
 	server.Use(Recovery)
 
-	group := server.Group("")
+	// 健康检查放在根路径
+	server.GET("/health", HealthCheck)
+
+	group := server.Group("/api")
 	{
 		group.POST("/netcloud/login", cloudnet.SendByPhone)          // 发送验证码
 		group.POST("/netcloud/login/verify", cloudnet.VerifyCaptcha) // 验证验证码
@@ -32,9 +35,6 @@ func NewRouter() *gin.Engine {
 		// 暂时不用下面接口
 		group.GET("/bilibili/login", bilibili.BiliLogin)
 		group.GET("/bilibili/login/check", bilibili.BiliLoginWithCookie)
-
-		// 健康检查
-		group.GET("/health", HealthCheck)
 	}
 	return server
 }
@@ -44,8 +44,8 @@ func Cors() gin.HandlerFunc {
 		method := c.Request.Method
 		origin := c.Request.Header.Get("Origin")
 		if origin != "" {
-			// 修改此处：将*替换为前端实际域名（如http://localhost:3000）
-			c.Header("Access-Control-Allow-Origin", "http://localhost:3000")
+			// 允许所有本地开发环境的请求
+			c.Header("Access-Control-Allow-Origin", origin)
 			c.Header("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE, UPDATE")
 			c.Header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization, X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version")
 			c.Header("Access-Control-Expose-Headers", "Content-Length, Access-Control-Allow-Origin, Access-Control-Allow-Headers, Cache-Control, Content-Language, Content-Type")
@@ -53,7 +53,7 @@ func Cors() gin.HandlerFunc {
 			c.Header("Access-Control-Max-Age", "86400")          // 预检请求结果缓存24小时
 		}
 		if method == "OPTIONS" {
-			c.JSON(http.StatusOK, "ok!")
+			c.AbortWithStatus(http.StatusNoContent)
 			return
 		}
 
