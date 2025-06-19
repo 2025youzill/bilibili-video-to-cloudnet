@@ -221,7 +221,7 @@ const BilibiliPage = () => {
 					boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
 				}}
 			>
-				<h1 style={{ textAlign: "center", marginBottom: "24px" }}>BVTC (bilibili-video-to-cloudnet)</h1>
+				<h1 style={{ textAlign: "center", marginBottom: "24px" }}>BVTC</h1>
 				<div
 					style={{
 						display: "flex",

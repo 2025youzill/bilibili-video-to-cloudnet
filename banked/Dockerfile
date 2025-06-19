@@ -22,7 +22,6 @@ WORKDIR /banked
 
 COPY --from=builder /banked/main .
 COPY --from=builder /banked/tool/ffmpeg/ffmpeg /banked/tool/ffmpeg/ffmpeg
-COPY --from=builder /banked/cloudnet/data/cookie.json /banked/cloudnet/data/cookie.json
 
 EXPOSE 8080
 CMD ["./main"]
