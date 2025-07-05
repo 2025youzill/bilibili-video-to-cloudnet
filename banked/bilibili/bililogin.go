@@ -1,4 +1,5 @@
-// 暂时不用这部分,如果后续需要登录,可以参考这个文件
+// Package bilibili用于用户自行登录
+// Note: 暂时不用这部分,如果后续需要登录,可以参考这个文件
 package bilibili
 
 import (
