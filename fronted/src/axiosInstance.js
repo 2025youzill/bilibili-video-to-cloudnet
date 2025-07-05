@@ -3,7 +3,7 @@ import axios from "axios";
 // 配置 axios 实例
 const axiosInstance = axios.create({
 	baseURL: "/api",
-	timeout: 6000, // 请求超时时间设置为1分钟
+	timeout: 3000, // 请求超时时间设置为30秒
 	withCredentials: true, // 允许跨域携带cookie
 	headers: {
 		"Content-Type": "application/json",

@@ -29,7 +29,8 @@ func NewRouter() *gin.Engine {
 		group.GET("/netcloud/login/check", cloudnet.CheckCookie)     // 检查登陆状态
 		group.GET("/netcloud/playlist", cloudnet.ShowPlaylist)
 
-		group.POST("/bilibili/load", bilibili.LoadMP4)
+		group.POST("/bilibili/createtask", bilibili.CreateLoadMP4Task)       // 创建任务
+		group.GET("/bilibili/checktask/:taskId", bilibili.CheckLoadMP4Task) // 查询任务状态
 		group.GET("/bilibili/list", bilibili.GetVideoList)
 
 		// 暂时不用下面接口

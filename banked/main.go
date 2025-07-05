@@ -26,8 +26,8 @@ func main() {
 	s := &http.Server{
 		Addr:           ":8080",
 		Handler:        newRouter,
-		ReadTimeout:    60 * time.Second,
-		WriteTimeout:   60 * time.Second,
+		ReadTimeout:    30 * time.Second,
+		WriteTimeout:   30 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 	}
 	if err := s.ListenAndServe(); err != nil {

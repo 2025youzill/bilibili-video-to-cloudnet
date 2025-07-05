@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Input, Button, List, message, Modal, Checkbox, Space, Pagination, App } from "antd";
+import React, { useState, useEffect } from "react";
+import { Input, Button, List, message, Modal, Checkbox, Space, Pagination, App, Progress } from "antd";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../axiosInstance";
 
@@ -20,6 +20,14 @@ const BilibiliPage = () => {
 	const [userInfo, setUserInfo] = useState(null);
 	const navigate = useNavigate();
 	const { message: messageApi } = App.useApp();
+
+	const [taskId, setTaskId] = useState(null);
+	const [taskStatus, setTaskStatus] = useState(null);
+	const [progress, setProgress] = useState(0);
+	const [progressModalVisible, setProgressModalVisible] = useState(false);
+	const [progressError, setProgressError] = useState("");
+	const [progressTimer, setProgressTimer] = useState(null);
+	const [uploadResult, setUploadResult] = useState(null);
 
 	const showError = (msg) => {
 		messageApi.error(msg);
@@ -133,81 +141,92 @@ const BilibiliPage = () => {
 	};
 
 	const handleUpload = async (playlist) => {
-		console.log("开始执行上传函数");
 		let uploadModal = null;
 		try {
-			console.log("开始上传，选中的视频:", selectedVideos);
 			if (!selectedVideos || selectedVideos.length === 0) {
 				message.error("请先选择要上传的视频");
 				return;
 			}
 			setUploading(true);
-			// 显示上传中的Modal
-			uploadModal = Modal.info({
-				title: "上传中，请稍等...(๑´ڡ`๑)",
-				icon: null,
-				okButtonProps: { style: { display: "none" } },
-				cancelButtonProps: { style: { display: "none" } },
-				closable: false,
-				maskClosable: false,
-			});
+			setUploadResult(null); // 清空之前的上传结果
 
 			const requestData = {
 				bvid: selectedVideos,
 				splaylist: !!playlist.pid,
 				pid: playlist.pid || undefined,
 			};
-			console.log("准备发送请求，数据:", requestData);
-			console.log("请求URL:", "bilibili/load");
 
-			// 添加请求前的日志
-			console.log("发送请求前的状态:", {
-				selectedVideos,
-				playlist,
-				requestData,
-				uploading: uploading,
-			});
+			// 1. 发起任务创建请求，获取task_id
+			const response = await axiosInstance.post("bilibili/createtask", requestData);
+			if (response.data.code === 200 && response.data.data?.task_id) {
+				const tid = response.data.data.task_id;
+				setTaskId(tid);
+				setProgress(0);
+				setTaskStatus("pending");
+				setProgressError("");
+				setProgressModalVisible(true);
 
-			const response = await axiosInstance.post("bilibili/load", requestData);
-			console.log("上传响应:", response.data);
-			// 关闭上传中的Modal
-			if (uploadModal) {
-				uploadModal.destroy();
-			}
-			if (response.data.code === 200) {
-				const data = response.data.data;
-				if (data.failed && data.failed.length > 0) {
-					const failedMsgs = data.failed.map((f) => `《${f.title}》处理失败: ${f.error}`).join("\n");
-					message.error(`部分视频上传失败 (ŏ﹏ŏ、)\n${failedMsgs}`);
-				} else if (data.success && data.success.length > 0) {
-					message.success("所有音乐上传成功 (≧▽≦)");
-				}
+				// 2. 启动轮询
+				const timer = setInterval(() => {
+					axiosInstance
+						.get(`bilibili/checktask/${tid}`)
+						.then((res) => {
+							if (res.data.code === 200 && res.data.data) {
+								const task = res.data.data;
+								setProgress(task.progress || 0);
+								setTaskStatus(task.status);
+								if (task.status === "completed" || task.status === "failed") {
+									clearInterval(timer);
+									setProgressModalVisible(false);
+									setUploading(false);
+
+									// 保存结果
+									setUploadResult({
+										success: task.success || [],
+										failed: task.failed || [],
+									});
+
+									if (task.status === "completed") {
+										if (task.failed && task.failed.length > 0) {
+											message.warning("部分视频上传失败，详情见下方");
+										} else {
+											message.success("所有音乐上传成功 (≧▽≦)");
+										}
+									} else {
+										setProgressError(task.error || "任务失败");
+										message.error(task.error || "任务失败");
+									}
+								}
+							} else {
+								clearInterval(timer);
+								setProgressModalVisible(false);
+								setUploading(false);
+								message.error("查询任务状态失败");
+							}
+						})
+						.catch(() => {
+							clearInterval(timer);
+							setProgressModalVisible(false);
+							setUploading(false);
+							message.error("查询任务状态失败");
+						});
+				}, 2000); // 每2秒轮询
+				setProgressTimer(timer);
 			} else {
-				message.error(`上传失败 (ŏ﹏ŏ、)۶: ${response.data.msg || "未知错误"}`);
+				setUploading(false);
+				message.error(`上传失败: ${response.data.msg || "未知错误"}`);
 			}
 		} catch (error) {
-			console.error("上传错误:", error);
-			console.error("错误详情:", {
-				message: error.message,
-				code: error.code,
-				response: error.response,
-				config: error.config,
-			});
-			// 关闭上传中的Modal
-			if (uploadModal) {
-				uploadModal.destroy();
-			}
-			if (error.code === "ERR_NETWORK") {
-				message.error("网络连接失败，请检查网络连接或稍后重试 (ŏ﹏ŏ、)۶");
-			} else if (error.code === "ECONNABORTED") {
-				message.error("上传超时，请检查网络连接或稍后重试 (ŏ﹏ŏ、)۶");
-			} else {
-				message.error(`上传失败 (ŏ﹏ŏ、)۶: ${error.response?.data?.msg || error.message}`);
-			}
-		} finally {
 			setUploading(false);
+			message.error(`上传失败: ${error.response?.data?.msg || error.message}`);
 		}
 	};
+
+	useEffect(() => {
+		return () => {
+			if (progressTimer) clearInterval(progressTimer);
+		};
+	}, [progressTimer]);
 
 	return (
 		<App>
@@ -331,10 +350,10 @@ const BilibiliPage = () => {
 							type="primary"
 							onClick={handleSave}
 							style={{ marginTop: "20px" }}
-							disabled={selectedVideos.length === 0 || uploading}
-							loading={uploading}
+							disabled={selectedVideos.length === 0 || uploading || progressModalVisible}
+							loading={uploading || progressModalVisible}
 						>
-							{uploading ? "上传中..." : `保存到网易云歌单 (${selectedVideos.length}个视频)`}
+							{uploading || progressModalVisible ? "上传中..." : `保存到网易云歌单 (${selectedVideos.length}个视频)`}
 						</Button>
 					</div>
 				)}
@@ -392,6 +411,60 @@ const BilibiliPage = () => {
 					]}
 				>
 					<p>请先登录网易云音乐账号</p>
+				</Modal>
+
+				<Modal open={progressModalVisible} footer={null} closable={false} centered title="上传进度">
+					<div style={{ marginBottom: 16 }}>
+						{progressError ? (
+							<span style={{ color: "red" }}>{progressError}</span>
+						) : (
+							<>
+								<p>正在上传，请稍候...</p>
+								<Progress
+									percent={progress}
+									status={taskStatus === "failed" ? "exception" : taskStatus === "completed" ? "success" : "active"}
+								/>
+							</>
+						)}
+					</div>
+				</Modal>
+
+				<Modal
+					open={!!uploadResult}
+					onCancel={() => setUploadResult(null)}
+					footer={[
+						<Button key="close" type="primary" onClick={() => setUploadResult(null)}>
+							关闭
+						</Button>,
+					]}
+					title="上传结果"
+				>
+					{uploadResult && (
+						<>
+							{uploadResult.success.length > 0 && (
+								<div style={{ marginBottom: 12 }}>
+									<b style={{ color: "green" }}>上传成功：</b>
+									<ul>
+										{uploadResult.success.map((title, idx) => (
+											<li key={idx}>{title}</li>
+										))}
+									</ul>
+								</div>
+							)}
+							{uploadResult.failed.length > 0 && (
+								<div>
+									<b style={{ color: "red" }}>上传失败：</b>
+									<ul>
+										{uploadResult.failed.map((item, idx) => (
+											<li key={idx}>
+												{item.title}：{item.error}
+											</li>
+										))}
+									</ul>
+								</div>
+							)}
+						</>
+					)}
 				</Modal>
 			</div>
 		</App>

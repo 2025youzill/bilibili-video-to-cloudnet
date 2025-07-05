@@ -60,7 +60,7 @@ func TranslateVideoToAudio(req AudioReq, splaylist bool, pid int64) error {
 	return nil
 }
 
-// 这个封面有时候能用有时候不能？不知道是什么逻辑
+// 这个封面有时候不能用？不知道是什么逻辑
 func convertToMP3(ffmpegPath, inputFile, outputFile string, req AudioReq) error {
 	// 检查封面文件是否存在
 	if _, err := os.Stat(req.CoverArt); os.IsNotExist(err) {

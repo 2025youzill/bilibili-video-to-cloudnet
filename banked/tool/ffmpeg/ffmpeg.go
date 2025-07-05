@@ -48,7 +48,7 @@ func ExtractFFmpeg() (string, error) {
 	} else {
 		filename = "ffmpeg_" + randomstring.GenerateRandomString(8)
 	}
-	ffmpegTmpExe := filepath.Join("tool", "ffmpeg", filename)
+	ffmpegTmpExe := filepath.Join("file", filename)
 
 	// 写入二进制数据
 	if err := os.WriteFile(ffmpegTmpExe, binData, 0o755); err != nil {

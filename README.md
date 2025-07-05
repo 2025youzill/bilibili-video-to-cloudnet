@@ -22,6 +22,7 @@
 ## :gear:运行
 
 ### Docker Compose 部署
+
 - 在根目录运行 docker-compose.yml 构建项目镜像
   ```bash
   docker compose up -d --build
@@ -70,9 +71,10 @@
   ```bash
   npm start
   ```
-  
+
 ## 🎉 启动成功
-  端口将在本地 http://localhost:8000 开放
+
+端口将在本地 http://localhost:8000 开放
 
 ## 📷 运行截图
 
@@ -80,7 +82,7 @@
   <img src="https://github.com/user-attachments/assets/098213f1-021d-4a92-8b47-741f0216edd5" alt="照片" width=50%>
 </p>
 
-___
+---
 
 <p align="center">
   <img src="https://github.com/user-attachments/assets/1331c1b6-af35-4378-b5e3-f3a980508486" alt="照片" width=50%>
@@ -88,9 +90,8 @@ ___
 
 ## :hammer_and_wrench:TODO
 
-- [x]  docker部署
+- [X]  load接口支持多文件上传，由于http超时限制，过长时间的上传会返回503
 - [ ]  保存的歌曲没有歌词，对歌词功能的完善（现在不支持读取 lrc 文件，没有什么想法，只能等大佬发现方法了）
-- [ ]  load接口支持多文件上传，由于http超时限制，过长时间的上传会返回503
 - [ ]  服务器部署
 
 ## ❤️ 鸣谢
@@ -99,7 +100,7 @@ ___
 - [bilibili 的 API 的 Go SDK](https://github.com/CuteReimu/bilibili)
 - [FFmpeg](https://ffmpeg.org/)
 - [FFmpeg Static Auto-Builds](https://github.com/BtbN/FFmpeg-Builds)
-  
+
   以及本项目所依赖的所有优秀的库。
 
 ## ⚠️ 声明
