@@ -1,7 +1,7 @@
 services:
   banked:
-    image: my-banked:latest
-    container_name: my-banked-container
+    image: bvtc-banked:latest
+    container_name: bvtc-banked-container
     build:
       context: ./banked
       dockerfile: Dockerfile
@@ -22,7 +22,6 @@ services:
       - app-network
     volumes:
       - ./banked/log/logs:/banked/log/logs
-      - ./banked/config:/banked/config
       - type: bind
         source: /go/pkg/mod
         target: /go/pkg/mod
@@ -39,8 +38,8 @@ services:
           memory: 256M
 
   fronted:
-    image: my-fronted:latest
-    container_name: my-fronted-container
+    image: bvtc-fronted:latest
+    container_name: bvtc-fronted-container
     build:
       context: ./fronted
       dockerfile: Dockerfile

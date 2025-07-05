@@ -5,3 +5,4 @@ docker-compose.yml
 .gitignore
 .git
 banked/tool/ffmpeg/ffmpeg.exe
+banked/cloudnet/data

@@ -22,6 +22,7 @@ WORKDIR /banked
 
 COPY --from=builder /banked/main .
 COPY --from=builder /banked/tool/ffmpeg/ffmpeg /banked/tool/ffmpeg/ffmpeg
+COPY --from=builder /banked/config /banked/config
 
 EXPOSE 8080
 CMD ["./main"]

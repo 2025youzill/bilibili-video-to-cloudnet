@@ -22,18 +22,31 @@
 ## :gear:运行
 
 ### Docker Compose 部署
+- 建议创建一个docker-compose.yml文件拉取镜像并生成容器，样式如下
+  ```dockerfile
+  services:
+  banked:
+    image: youzill/bvtc-banked:latest
+    container_name: bvtc-banked-container
+    ports:
+      - "8081:8080"
+    environment:
+      - GIN_MODE=release
+      - TZ=Asia/Shanghai
+    restart: unless-stopped
 
-- 在根目录运行 docker-compose.yml 构建项目镜像
-  ```bash
-  docker compose up -d --build
+  fronted:
+    image: youzill/bvtc-fronted:latest
+    container_name: bvtc-fronted-container
+    ports:
+      - "8000:8000"
+    depends_on:
+      - banked
+    restart: unless-stopped
   ```
-- 如果直接运行拉取不到所需镜像，可以先拉取基础镜像再构建项目镜像
+- 终端运行这个文件
   ```bash
-  docker pull golang:1.24-alpine
-  docker pull ubuntu:22.04
-  docker pull node:22-alpine
-  docker pull nginx:alpine
-  docker compose up -d --build
+  docker compose up -d
   ```
 
 ### Windows 部署
