@@ -22,7 +22,7 @@
 ## :gear:运行
 
 ### Docker Compose 部署
-- 建议创建一个docker-compose.yml文件拉取镜像并生成容器，样式如下
+- 建议创建一个 docker-compose.yml 文件拉取镜像并生成容器，样式如下
   ```dockerfile
   services:
   banked:
