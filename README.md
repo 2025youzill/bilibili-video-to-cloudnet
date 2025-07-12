@@ -101,6 +101,12 @@
   <img src="https://github.com/user-attachments/assets/1331c1b6-af35-4378-b5e3-f3a980508486" alt="照片" width=50%>
 </p>
 
+---
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/31e730c4-5a2f-47b3-87b7-b909ee80e993" alt="照片" width=50%>
+</p>
+
 ## :hammer_and_wrench:TODO
 
 - [X]  load接口支持多文件上传，由于http超时限制，过长时间的上传会返回503
