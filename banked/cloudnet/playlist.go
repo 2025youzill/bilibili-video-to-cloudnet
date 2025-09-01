@@ -9,6 +9,7 @@ import (
 	"bvtc/client"
 	"bvtc/log"
 	"bvtc/response"
+	redis_pool "bvtc/tool/pool"
 
 	"github.com/chaunsin/netease-cloud-music/api/types"
 	"github.com/chaunsin/netease-cloud-music/api/weapi"
@@ -21,10 +22,26 @@ type ShowPlaylistResp struct {
 }
 
 func ShowPlaylist(ctx *gin.Context) {
-	api, err := client.GetNetcloudApi()
+	sid, err := ctx.Cookie("SessionId")
+	if err != nil {
+		log.Logger.Error("fail to get sessionId", log.Any("err : ", err))
+		ctx.JSON(http.StatusBadRequest, response.FailMsg("fail to get sessionId"))
+		return
+	}
+	rdb := redis_pool.GetRdb()
+	rtcx := redis_pool.GetRctx()
+	key := "session:" + sid
+	cookieFile, rerr := rdb.HGet(rtcx, key, "cookieFile").Result()
+	if rerr != nil || cookieFile == "" {
+		log.Logger.Error("session not found or expired", log.Any("err : ", rerr))
+		ctx.JSON(http.StatusBadRequest, response.FailMsg("session not found or expired"))
+		return
+	}
+
+	api, _, err := client.MultiInitNetcloudCli(cookieFile)
 	if err != nil {
 		log.Logger.Error("client fail to init", log.Any("err : ", err))
-		ctx.JSON(http.StatusInternalServerError, response.FailMsg(err.Error()))
+		ctx.JSON(http.StatusInternalServerError, response.FailMsg("client fail to init"))
 		return
 	}
 
@@ -60,9 +77,14 @@ type UploadToMusicReq struct {
 	TrackIds int64
 }
 
-func UploadToPlaylist(req UploadToMusicReq) error {
-	api, _ := client.GetNetcloudApi()
-	resp, err := api.PlaylistAddOrDel(context.Background(), &weapi.PlaylistAddOrDelReq{Op: "add", Pid: req.Pid, TrackIds: types.IntsString{req.TrackIds}, Imme: true})
+func UploadToPlaylist(req UploadToMusicReq, cookiefile string) error {
+	api, _, err := client.MultiInitNetcloudCli(cookiefile)
+	if err != nil {
+		log.Logger.Error("client fail to init", log.Any("err : ", err))
+		return errors.New("client fail to init")
+	}
+	resp, err := api.PlaylistAddOrDel(context.Background(), &weapi.PlaylistAddOrDelReq{Op: "add", Pid: req.Pid, 
+	TrackIds: types.IntsString{req.TrackIds}, Imme: true})
 	if err != nil {
 		log.Logger.Error("fail", log.Any("err", err))
 		return errors.New("fail to upload to playlist")

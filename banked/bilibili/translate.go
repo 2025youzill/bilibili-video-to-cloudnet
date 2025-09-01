@@ -23,7 +23,7 @@ type AudioReq struct {
 	CoverArt string
 }
 
-func TranslateVideoToAudio(req AudioReq, splaylist bool, pid int64) error {
+func TranslateVideoToAudio(req AudioReq, splaylist bool, pid int64,cookiefile string) error {
 	currentDir, err := os.Getwd()
 	if err != nil {
 		log.Logger.Error("获取当前目录失败", log.Any("err", err))
@@ -51,7 +51,7 @@ func TranslateVideoToAudio(req AudioReq, splaylist bool, pid int64) error {
 		return errors.New("转换失败")
 	}
 
-	err = cloudnet.UploadToNetCloud(outputFile, splaylist, pid)
+	err = cloudnet.UploadToNetCloud(outputFile, splaylist, pid,cookiefile)
 	if err != nil {
 		log.Logger.Error("上传失败", log.Any("err", err))
 		return err

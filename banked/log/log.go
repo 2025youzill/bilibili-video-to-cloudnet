@@ -68,10 +68,8 @@ func InitLogger(logpath string, loglevel string) {
 	atomicLevel.SetLevel(level)
 
 	var writes = []zapcore.WriteSyncer{write}
-	// 如果是开发环境，同时在控制台上也输出
-	if level == zap.DebugLevel {
-		writes = append(writes, zapcore.AddSync(os.Stdout))
-	}
+	// 生产环境也输出到控制台，方便Docker日志查看
+	writes = append(writes, zapcore.AddSync(os.Stdout))
 	core := zapcore.NewCore(
 		zapcore.NewConsoleEncoder(encoderConfig),
 		// zapcore.NewJSONEncoder(encoderConfig),

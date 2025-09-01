@@ -8,6 +8,8 @@ import (
 	"bvtc/config"
 	"bvtc/log"
 	"bvtc/route"
+
+	redis_pool "bvtc/tool/pool"
 	"bvtc/tool/spew"
 )
 
@@ -15,12 +17,15 @@ func main() {
 	log.InitLogger(config.GetConfig().Log.Path, config.GetConfig().Log.Level)
 	spew.InitSpew()
 	// 程序启动时初始化网易云接口
-	if err := client.InitNetcloudCli(); err != nil {
+	if _, _, err := client.MultiInitNetcloudCli(""); err != nil {
 		panic("网易云接口初始化失败: " + err.Error())
 	}
 	if err := client.InitBiliCli(); err != nil {
 		panic("哔哩哔哩接口初始化失败：" + err.Error())
 	}
+
+	// 初始化redis
+	redis_pool.InitRedis()
 
 	newRouter := route.NewRouter()
 	s := &http.Server{

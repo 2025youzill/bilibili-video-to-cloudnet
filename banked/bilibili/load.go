@@ -15,6 +15,7 @@ import (
 	"bvtc/constant"
 	"bvtc/log"
 	"bvtc/response"
+	redis_pool "bvtc/tool/pool"
 	"bvtc/tool/randomstring"
 
 	"github.com/CuteReimu/bilibili/v2"
@@ -73,6 +74,22 @@ func CreateLoadMP4Task(ctx *gin.Context) {
 		return
 	}
 
+	sid, err := ctx.Cookie("SessionId")
+	if err != nil {
+		log.Logger.Error("fail to get sessionId", log.Any("err : ", err))
+		ctx.JSON(http.StatusBadRequest, response.FailMsg("fail to get sessionId"))
+		return
+	}
+	rdb := redis_pool.GetRdb()
+	rtcx := redis_pool.GetRctx()
+	key := "session:" + sid
+	cookieFile, rerr := rdb.HGet(rtcx, key, "cookieFile").Result()
+	if rerr != nil || cookieFile == "" {
+		log.Logger.Error("session not found or expired", log.Any("err : ", rerr))
+		ctx.JSON(http.StatusBadRequest, response.FailMsg("session not found or expired"))
+		return
+	}
+
 	if len(req.Bvid) == 0 || req.Bvid[0] == "" {
 		log.Logger.Error("bvid is empty")
 		ctx.JSON(http.StatusBadRequest, response.FailMsg("bvid is empty"))
@@ -89,7 +106,7 @@ func CreateLoadMP4Task(ctx *gin.Context) {
 	task := taskManager.createTask(req)
 
 	// 启动异步处理
-	go LoadMP4Async(task.ID)
+	go LoadMP4Async(task.ID,cookieFile)
 
 	// 返回任务ID
 	ctx.JSON(http.StatusOK, response.SuccessMsg(map[string]string{"task_id": task.ID}))
@@ -141,7 +158,7 @@ func CheckLoadMP4Task(ctx *gin.Context) {
 }
 
 // processLoadMP4Task 异步处理任务
-func LoadMP4Async(taskID string) {
+func LoadMP4Async(taskID string,cookiefile string) {
 	task, _ := taskManager.getTask(taskID)
 	// 更新状态为运行中
 	taskManager.updateTask(taskID, constant.TaskStatusRunning, 0, "")
@@ -236,7 +253,7 @@ func LoadMP4Async(taskID string) {
 			}
 			audioreq.CoverArt = coverfilename
 
-			err = TranslateVideoToAudio(audioreq, task.Request.Splaylist, task.Request.Pid)
+			err = TranslateVideoToAudio(audioreq, task.Request.Splaylist, task.Request.Pid,cookiefile)
 			if err != nil {
 				resultChan <- result{Title: videoinfo.Title, Err: fmt.Errorf("上传失败: %v", err)}
 				return
@@ -265,7 +282,7 @@ func LoadMP4Async(taskID string) {
 	}
 
 	// 更新最终状态
-	taskManager.updateTask(taskID, constant.TaskStatusCompleted, 100 ,"")
+	taskManager.updateTask(taskID, constant.TaskStatusCompleted, 100, "")
 }
 
 // Task控制函数

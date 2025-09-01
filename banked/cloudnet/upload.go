@@ -20,12 +20,12 @@ import (
 
 var ctx context.Context = context.Background()
 
-func UploadToNetCloud(filename string, splaylist bool, pid int64) error {
+func UploadToNetCloud(filename string, splaylist bool, pid int64, cookiefile string) error {
 	// 检查文件是否存在
 	ext := filepath.Ext(filename)
 	bitrate := constant.BitRate
 
-	api, err := client.GetNetcloudApi()
+	api, _, err := client.MultiInitNetcloudCli(cookiefile)
 	if err != nil {
 		log.Logger.Error("client fail to init", log.Any("err : ", err))
 		return errors.New("client fail to init")
@@ -180,7 +180,7 @@ func UploadToNetCloud(filename string, splaylist bool, pid int64) error {
 		err = UploadToPlaylist(UploadToMusicReq{
 			Pid:      pid,
 			TrackIds: trackId,
-		})
+		}, cookiefile)
 		if err != nil {
 			log.Logger.Error("添加到歌单失败", log.Any("err", err))
 			return errors.New("fail to add to playlist")

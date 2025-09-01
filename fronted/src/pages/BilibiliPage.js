@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Input, Button, List, message, Modal, Checkbox, Space, Pagination, App, Progress } from "antd";
+import { UserOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../axiosInstance";
+import { checkLoginStatus } from "../api/login";
 
 const BilibiliPage = () => {
 	const [videoId, setVideoId] = useState("");
@@ -13,21 +15,18 @@ const BilibiliPage = () => {
 	const [selectedVideos, setSelectedVideos] = useState([]);
 	const [uploading, setUploading] = useState(false);
 	const [currentPage, setCurrentPage] = useState(1);
-	const [pageSize, setPageSize] = useState(10);
-	const [total, setTotal] = useState(0);
-	const [searchValue, setSearchValue] = useState("");
-	const [isLoggedIn, setIsLoggedIn] = useState(false);
-	const [userInfo, setUserInfo] = useState(null);
+	const [pageSize] = useState(10);
 	const navigate = useNavigate();
 	const { message: messageApi } = App.useApp();
 
-	const [taskId, setTaskId] = useState(null);
 	const [taskStatus, setTaskStatus] = useState(null);
 	const [progress, setProgress] = useState(0);
 	const [progressModalVisible, setProgressModalVisible] = useState(false);
 	const [progressError, setProgressError] = useState("");
 	const [progressTimer, setProgressTimer] = useState(null);
 	const [uploadResult, setUploadResult] = useState(null);
+	const [avatarUrl, setAvatarUrl] = useState("");
+	const [isHovering, setIsHovering] = useState(false);
 
 	const showError = (msg) => {
 		messageApi.error(msg);
@@ -141,7 +140,6 @@ const BilibiliPage = () => {
 	};
 
 	const handleUpload = async (playlist) => {
-		let uploadModal = null;
 		try {
 			if (!selectedVideos || selectedVideos.length === 0) {
 				message.error("请先选择要上传的视频");
@@ -160,7 +158,6 @@ const BilibiliPage = () => {
 			const response = await axiosInstance.post("bilibili/createtask", requestData);
 			if (response.data.code === 200 && response.data.data?.task_id) {
 				const tid = response.data.data.task_id;
-				setTaskId(tid);
 				setProgress(0);
 				setTaskStatus("pending");
 				setProgressError("");
@@ -223,10 +220,44 @@ const BilibiliPage = () => {
 	};
 
 	useEffect(() => {
+		// 进入页面先检查登录状态，未登录则跳转登录页
+		const ensureLogin = async () => {
+			try {
+				const res = await checkLoginStatus();
+				if (res.code !== 200) {
+					navigate("/login");
+				} else {
+					// 已登录
+					// 获取用户头像（失败则忽略，使用占位）
+					try {
+						// 后端现在直接返回图片数据，所以直接使用接口URL作为图片src
+						const avatarUrl = `${axiosInstance.defaults.baseURL}/netcloud/useravatar`;
+						console.log("设置头像URL:", avatarUrl);
+						setAvatarUrl(avatarUrl);
+					} catch (error) {
+						console.error("获取头像失败:", error);
+					}
+				}
+			} catch (e) {
+				navigate("/login");
+			}
+		};
+		ensureLogin();
+
 		return () => {
 			if (progressTimer) clearInterval(progressTimer);
 		};
-	}, [progressTimer]);
+	}, [navigate]); // 移除progressTimer依赖，避免重复调用
+
+	const handleLogout = async () => {
+		try {
+			await axiosInstance.post("netcloud/logout");
+			message.success("已退出登录");
+			navigate("/login");
+		} catch (e) {
+			message.error("退出失败，请重试");
+		}
+	};
 
 	return (
 		<App>
@@ -240,7 +271,100 @@ const BilibiliPage = () => {
 					boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
 				}}
 			>
-				<h1 style={{ textAlign: "center", marginBottom: "24px" }}>BVTC</h1>
+				<div
+					style={{
+						display: "flex",
+						alignItems: "center",
+						justifyContent: "center",
+						marginBottom: 16,
+						position: "relative",
+					}}
+				>
+					<h1 style={{ margin: 0 }}>BVTC</h1>
+					<div style={{ position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)" }}>
+						<div
+							style={{
+								width: 48,
+								height: 48,
+								borderRadius: "50%",
+								overflow: "hidden",
+								cursor: "pointer",
+								boxShadow: "0 2px 6px rgba(0,0,0,0.12)",
+								transition: "all 0.3s ease",
+								display: "flex",
+								alignItems: "center",
+								justifyContent: "center",
+								background: "#fafafa",
+								position: "relative",
+							}}
+							onMouseEnter={() => setIsHovering(true)}
+							onMouseLeave={() => setIsHovering(false)}
+							onClick={handleLogout}
+						>
+							{/* 头像图片 */}
+							{avatarUrl ? (
+								<>
+									{console.log("渲染头像，URL:", avatarUrl)}
+									<img
+										src={avatarUrl}
+										alt="avatar"
+										style={{
+											width: "100%",
+											height: "100%",
+											objectFit: "cover",
+											transition: "all 0.3s ease",
+											opacity: isHovering ? 0 : 1,
+											transform: isHovering ? "scale(0.8)" : "scale(1)",
+										}}
+										onLoad={() => console.log("头像加载成功")}
+										onError={(e) => console.error("头像加载失败:", e)}
+									/>
+								</>
+							) : (
+								<>
+									{console.log("头像URL为空，显示默认图标")}
+									<UserOutlined
+										style={{
+											transition: "all 0.3s ease",
+											opacity: isHovering ? 0 : 1,
+											transform: isHovering ? "scale(0.8)" : "scale(1)",
+											fontSize: "24px",
+											color: "#666",
+										}}
+									/>
+								</>
+							)}
+						</div>
+
+						{/* 退出登录文字 - 条形样式，不受圆形限制 */}
+						<div
+							style={{
+								position: "absolute",
+								top: "50%",
+								left: "50%",
+								transform: "translate(-50%, -50%)",
+								padding: "8px 16px",
+								background: "#87ceeb",
+								color: "white",
+								borderRadius: "20px",
+								fontSize: "12px",
+								fontWeight: "bold",
+								transition: "all 0.3s ease",
+								opacity: isHovering ? 1 : 0,
+								transform: isHovering ? "translate(-50%, -50%) scale(1)" : "translate(-50%, -50%) scale(0.8)",
+								whiteSpace: "nowrap",
+								userSelect: "none",
+								zIndex: 10,
+								minWidth: "70px",
+								textAlign: "center",
+								boxShadow: "0 2px 8px rgba(135, 206, 235, 0.4)",
+								pointerEvents: "none",
+							}}
+						>
+							退出登录
+						</div>
+					</div>
+				</div>
 				<div
 					style={{
 						display: "flex",

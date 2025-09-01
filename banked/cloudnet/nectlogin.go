@@ -2,12 +2,20 @@ package cloudnet
 
 import (
 	"bvtc/client"
+	"bvtc/config"
 	"bvtc/log"
 	"bvtc/response"
+	redis_pool "bvtc/tool/pool"
+	"bvtc/tool/session"
 	"context"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/chaunsin/netease-cloud-music/api/weapi"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/gin-gonic/gin"
 )
 
@@ -31,7 +39,9 @@ func SendByPhone(ctx *gin.Context) {
 	}
 	req.CtCode = 86
 
-	api, err := client.GetNetcloudApi()
+	cookieFile := filepath.Join(session.GenerateSessionID(32) + ".json")
+
+	api, err := client.MultiGetNetcloudApi(cookieFile)
 	if err != nil {
 		log.Logger.Error("client fail to init", log.Any("err : ", err))
 		ctx.JSON(http.StatusInternalServerError, response.FailMsg("client fail to init"))
@@ -46,6 +56,22 @@ func SendByPhone(ctx *gin.Context) {
 		return
 	}
 	_ = resp
+
+	sid := session.GenerateSessionID(16)
+	spew.Dump("sid : ", sid)
+	ctx.SetSameSite(http.SameSiteLaxMode)
+	ctx.SetCookie("SessionId", sid, 60*10, "/", "", false, true)
+	rdb := redis_pool.GetRdb()
+	rtcx := redis_pool.GetRctx()
+	key := "session:" + sid
+	rdb.HSet(rtcx, key, map[string]interface{}{
+		"cookieFile": cookieFile,
+		"createdAt":  time.Now().Format(time.RFC3339),
+		"isValid":    "true",
+	})
+	// 设置 Redis 会话键 10 分钟过期
+	rdb.Expire(rtcx, key, 10*time.Minute)
+
 	log.Logger.Info("email success to send", log.Any("phone : ", req.Phone))
 	ctx.JSON(http.StatusOK, response.SuccessMsg("email success to send"))
 }
@@ -58,7 +84,24 @@ type VerifyReq struct {
 }
 
 func VerifyCaptcha(ctx *gin.Context) {
-	api, err := client.GetNetcloudApi()
+	sid, err := ctx.Cookie("SessionId")
+	if err != nil {
+		log.Logger.Error("fail to get sessionId", log.Any("err : ", err))
+		ctx.JSON(http.StatusBadRequest, response.FailMsg("fail to get sessionId"))
+		return
+	}
+	spew.Dump("sid : ", sid)
+	rdb := redis_pool.GetRdb()
+	rtcx := redis_pool.GetRctx()
+	key := "session:" + sid
+	cookieFile, _ := rdb.HGet(rtcx, key, "cookieFile").Result()
+	if cookieFile == "" {
+		log.Logger.Error("cookie file not found", log.String("sid", sid))
+		ctx.JSON(http.StatusBadRequest, response.FailMsg("cookie file not found"))
+		return
+	}
+
+	api, err := client.MultiGetNetcloudApi(cookieFile)
 	if err != nil {
 		log.Logger.Error("client fail to init", log.Any("err : ", err))
 		ctx.JSON(http.StatusInternalServerError, response.FailMsg("client fail to init"))
@@ -114,13 +157,56 @@ func VerifyCaptcha(ctx *gin.Context) {
 		return
 	}
 
+	ctx.SetSameSite(http.SameSiteLaxMode)
+	ctx.SetCookie("SessionId", sid, 60*60*24*7, "/", "", false, true)
+
 	log.Logger.Info("user netclogin", log.Any("user : ", user))
+
+	// 登录成功后，将 Redis 中的会话有效期延长至 7 天，并刷新标记
+	rdb.HSet(rtcx, key, map[string]interface{}{
+		"createdAt": time.Now().Format(time.RFC3339),
+		"isValid":   "true",
+	})
+	rdb.Expire(rtcx, key, 7*24*time.Hour)
 	ctx.JSON(http.StatusOK, response.SuccessMsg(""))
 
 }
 
 func CheckCookie(ctx *gin.Context) {
-	api, err := client.GetNetcloudApi()
+	// 先从 cookie 读取 SessionId，再到 Redis 查询对应的 cookie 文件名
+	sid, err := ctx.Cookie("SessionId")
+	if err != nil {
+		log.Logger.Error("fail to get sessionId", log.Any("err : ", err))
+		ctx.JSON(http.StatusBadRequest, response.FailMsg("fail to get sessionId"))
+		return
+	}
+
+	log.Logger.Info("Session ID retrieved", log.String("session_id", sid))
+
+	rdb := redis_pool.GetRdb()
+	rtcx := redis_pool.GetRctx()
+	key := "session:" + sid
+	cookieFile, rerr := rdb.HGet(rtcx, key, "cookieFile").Result()
+	if rerr != nil || cookieFile == "" {
+		log.Logger.Error("session not found or expired", log.Any("err : ", rerr), log.String("cookieFile", cookieFile))
+		ctx.JSON(http.StatusBadRequest, response.FailMsg("session not found or expired"))
+		return
+	}
+
+	log.Logger.Info("Cookie file retrieved from Redis", log.String("cookieFile", cookieFile))
+
+	// 检查cookie文件是否存在且有内容
+	cfg := config.GetConfig()
+	cookieFilePath := filepath.Join(append(strings.Split(cfg.Api.Cookie.Filepath, "/"), cookieFile)...)
+	if cookieContent, err := os.ReadFile(cookieFilePath); err != nil {
+		log.Logger.Error("Cookie file not found or cannot be read", log.String("filePath", cookieFilePath), log.Any("err", err))
+		ctx.JSON(http.StatusBadRequest, response.FailMsg("Cookie file not found"))
+		return
+	} else {
+		log.Logger.Info("Cookie file content", log.String("filePath", cookieFilePath), log.String("content", string(cookieContent)))
+	}
+
+	api, _, err := client.MultiInitNetcloudCli(cookieFile)
 	if err != nil {
 		log.Logger.Error("client fail to init", log.Any("err : ", err))
 		ctx.JSON(http.StatusInternalServerError, response.FailMsg("client fail to init"))
@@ -128,13 +214,49 @@ func CheckCookie(ctx *gin.Context) {
 	}
 
 	status := api.NeedLogin(context.Background())
+	log.Logger.Info("NeedLogin check result", log.Any("needLogin", status))
+
 	if status {
 		log.Logger.Error("user need login")
 		ctx.JSON(http.StatusBadRequest, response.FailMsg("user need login"))
 		return
 	}
-
 	log.Logger.Info("user already login")
 	ctx.JSON(http.StatusOK, response.SuccessMsg("user already login"))
-	
+
+}
+
+func DeleteCookie(ctx *gin.Context) {
+	sid, err := ctx.Cookie("SessionId")
+	if err != nil {
+		log.Logger.Error("fail to get sessionId", log.Any("err : ", err))
+		ctx.JSON(http.StatusBadRequest, response.FailMsg("fail to get sessionId"))
+		return
+	}
+	rdb := redis_pool.GetRdb()
+	rtcx := redis_pool.GetRctx()
+	key := "session:" + sid
+	// 读取 cookie 文件名
+	cookieFile, _ := rdb.HGet(rtcx, key, "cookieFile").Result()
+
+	// 删除磁盘上的 cookie 文件
+	if cookieFile != "" {
+		cfg := config.GetConfig()
+		// 生成与创建时相同的路径：<cfg.Api.Cookie.Filepath>/<cookieFile>
+		filePath := filepath.Join(append(strings.Split(cfg.Api.Cookie.Filepath, "/"), cookieFile)...)
+		if err := os.Remove(filePath); err != nil {
+			if !os.IsNotExist(err) {
+				log.Logger.Error("failed to remove cookie file", log.Any("file", filePath), log.Any("err", err))
+			}
+		}
+	}
+
+	// 删除 Redis 中的会话数据
+	rdb.Del(rtcx, key)
+
+	// 清除浏览器端 SessionId Cookie（保持与设置时同样的属性）
+	ctx.SetSameSite(http.SameSiteLaxMode)
+	ctx.SetCookie("SessionId", "", -1, "/", "", false, true)
+
+	ctx.JSON(http.StatusOK, response.SuccessMsg("cookie deleted"))
 }

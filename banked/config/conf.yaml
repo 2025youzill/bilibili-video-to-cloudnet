@@ -1,14 +1,14 @@
 appName: "bilibili-video-to-cloudnet"
 log: # 日志配置
-  level: "debug"
-  path: "log/logs/app.log"
+  level: "info" # 生产环境改为info
+  path: ${LOG_PATH}
 api:
   debug: false
-  timeout: 0s # 使用时间单位（如 "30s", "500ms"）
-  retry: 0 # 使用整数
+  timeout: 30s
+  retry: 3
   cookie:
-    filepath: "./cloudnet/data/cookie.json" # 用户数据存储位置
-    interval: 0s
+    filepath: ${NETEASE_API_COOKIE_FILEPATH} # 用户数据存储位置
+    interval: ${NETEASE_API_COOKIE_INTERVAL}
 spew: # 深层打印
   indent: "  "
   maxdepth: 4
@@ -19,3 +19,16 @@ spew: # 深层打印
 music:
   bits: 320000 # 比特率
   concurrency: 5 # 并发处理数量
+redis:
+  host: ${REDIS_HOST}
+  port: ${REDIS_PORT}
+  password: ${REDIS_PASSWORD}
+  db: ${REDIS_DB}
+security:
+  session_secret: ${SESSION_SECRET}
+  max_file_size: "100MB"
+  allowed_file_types: ${ALLOWED_FILE_TYPES}
+  cors:
+    allowed_origins: ${CORS_ALLOWED_ORIGINS}
+    allowed_methods: ${CORS_ALLOWED_METHODS}
+    allowed_headers: ${CORS_ALLOWED_HEADERS}
