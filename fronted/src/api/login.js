@@ -8,7 +8,7 @@ export const sendCaptcha = async (phone) => {
 		});
 		return response.data;
 	} catch (error) {
-		console.error("发送验证码失败", error);
+		// console.error("发送验证码失败", error);
 		throw error;
 	}
 };
@@ -22,7 +22,7 @@ export const submitLogin = async ({ phone, captcha }) => {
 		});
 		return response.data;
 	} catch (error) {
-		console.error("验证验证码失败", error);
+		// console.error("验证验证码失败", error);
 		throw error;
 	}
 };
@@ -33,7 +33,7 @@ export const checkLoginStatus = async () => {
 		const response = await axiosInstance.get("/netcloud/login/check");
 		return response.data;
 	} catch (error) {
-		console.error("检查登录状态失败", error);
+		// console.error("检查登录状态失败", error);
 		throw error;
 	}
 };

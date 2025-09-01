@@ -103,7 +103,7 @@ func init() {
 	bindEnvVars()
 
 	// 调试：打印环境变量
-	debugEnvVars()
+	// debugEnvVars()
 
 	// 读取配置文件
 	if err := viper.ReadInConfig(); err != nil {
@@ -165,16 +165,16 @@ func bindEnvVars() {
 }
 
 // debugEnvVars 调试环境变量
-func debugEnvVars() {
-	log.Printf("=== Environment Variables Debug ===")
-	log.Printf("CORS_ALLOWED_ORIGINS: %s", os.Getenv("CORS_ALLOWED_ORIGINS"))
-	log.Printf("CORS_ALLOWED_METHODS: %s", os.Getenv("CORS_ALLOWED_METHODS"))
-	log.Printf("CORS_ALLOWED_HEADERS: %s", os.Getenv("CORS_ALLOWED_HEADERS"))
-	log.Printf("REDIS_HOST: %s", os.Getenv("REDIS_HOST"))
-	log.Printf("REDIS_PASSWORD: %s", os.Getenv("REDIS_PASSWORD"))
-	log.Printf("SESSION_SECRET: %s", os.Getenv("SESSION_SECRET"))
-	log.Printf("=== End Debug ===")
-}
+// func debugEnvVars() {
+// 	log.Printf("=== Environment Variables Debug ===")
+//  	log.Printf("CORS_ALLOWED_ORIGINS: %s", os.Getenv("CORS_ALLOWED_ORIGINS"))
+//  	log.Printf("CORS_ALLOWED_METHODS: %s", os.Getenv("CORS_ALLOWED_METHODS"))
+//  	log.Printf("CORS_ALLOWED_HEADERS: %s", os.Getenv("CORS_ALLOWED_HEADERS"))
+//  	log.Printf("REDIS_HOST: %s", os.Getenv("REDIS_HOST"))
+//  	log.Printf("REDIS_PASSWORD: %s", os.Getenv("REDIS_PASSWORD"))
+//  	log.Printf("SESSION_SECRET: %s", os.Getenv("SESSION_SECRET"))
+//  	log.Printf("=== End Debug ===")
+// }
 
 // GetConfig 用于获取解析后的配置结构体
 func GetConfig() YamlConfig {

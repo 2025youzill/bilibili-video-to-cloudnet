@@ -18,7 +18,7 @@ axiosInstance.interceptors.request.use(
 	},
 	(error) => {
 		// 对请求错误做些什么
-		console.error("请求错误:", error);
+		// console.error("请求错误:", error);
 		return Promise.reject(error);
 	}
 );
@@ -27,11 +27,11 @@ axiosInstance.interceptors.request.use(
 axiosInstance.interceptors.response.use(
 	(response) => response,
 	(error) => {
-		console.error("请求失败:", error);
+		// console.error("请求失败:", error);
 		if (error.code === "ERR_NETWORK") {
-			console.error("网络连接失败，请检查网络连接或后端服务是否启动");
+			// console.error("网络连接失败，请检查网络连接或后端服务是否启动");
 		} else if (error.code === "ECONNABORTED") {
-			console.error("请求超时，请检查网络连接");
+			// console.error("请求超时，请检查网络连接");
 		}
 		return Promise.reject(error);
 	}

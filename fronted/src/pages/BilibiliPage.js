@@ -51,25 +51,25 @@ const BilibiliPage = () => {
 				return;
 			}
 
-			console.log("请求URL:", url);
+			// console.log("请求URL:", url);
 			const response = await axiosInstance.get(url);
-			console.log("响应数据:", response.data);
+			// console.log("响应数据:", response.data);
 			setVideoInfo(response.data.data);
 			// 重置选中的视频
 			setSelectedVideos([]);
 		} catch (error) {
-			console.error("请求错误:", error);
+			// console.error("请求错误:", error);
 			// 打印完整的错误对象，帮助调试
-			console.log("错误详情:", {
-				response: error.response,
-				status: error.response?.status,
-				data: error.response?.data,
-			});
+			// console.log("错误详情:", {
+			// 	response: error.response,
+			// 	status: error.response?.status,
+			// 	data: error.response?.data,
+			// });
 
 			// 检查错误响应
 			if (error.response) {
-				console.log("错误状态码:", error.response.status);
-				console.log("错误信息:", error.response.data);
+				// console.log("错误状态码:", error.response.status);
+				// console.log("错误信息:", error.response.data);
 				if (error.response.status === 400) {
 					showError("请输入正确的bvid号(´～`)");
 				} else {
@@ -232,10 +232,10 @@ const BilibiliPage = () => {
 					try {
 						// 后端现在直接返回图片数据，所以直接使用接口URL作为图片src
 						const avatarUrl = `${axiosInstance.defaults.baseURL}/netcloud/useravatar`;
-						console.log("设置头像URL:", avatarUrl);
+						// console.log("设置头像URL:", avatarUrl);
 						setAvatarUrl(avatarUrl);
 					} catch (error) {
-						console.error("获取头像失败:", error);
+						// console.error("获取头像失败:", error);
 					}
 				}
 			} catch (e) {
@@ -304,7 +304,7 @@ const BilibiliPage = () => {
 							{/* 头像图片 */}
 							{avatarUrl ? (
 								<>
-									{console.log("渲染头像，URL:", avatarUrl)}
+									{/* console.log("渲染头像，URL:", avatarUrl) */}
 									<img
 										src={avatarUrl}
 										alt="avatar"
@@ -316,13 +316,17 @@ const BilibiliPage = () => {
 											opacity: isHovering ? 0 : 1,
 											transform: isHovering ? "scale(0.8)" : "scale(1)",
 										}}
-										onLoad={() => console.log("头像加载成功")}
-										onError={(e) => console.error("头像加载失败:", e)}
+										onLoad={() => {
+											/* console.log("头像加载成功") */
+										}}
+										onError={(e) => {
+											/* console.error("头像加载失败:", e) */
+										}}
 									/>
 								</>
 							) : (
 								<>
-									{console.log("头像URL为空，显示默认图标")}
+									{/* console.log("头像URL为空，显示默认图标") */}
 									<UserOutlined
 										style={{
 											transition: "all 0.3s ease",
@@ -491,18 +495,18 @@ const BilibiliPage = () => {
 								<List.Item.Meta title={playlist.pname} />
 								<Button
 									onClick={() => {
-										console.log("选择歌单:", playlist);
+										// console.log("选择歌单:", playlist);
 										setIsModalVisible(false);
 
 										// 使用 window.confirm 替代 Modal.confirm
 										const confirmed = window.confirm(`是否确认上传到${playlist.pname || "云盘"}？`);
-										console.log("确认结果:", confirmed);
+										// console.log("确认结果:", confirmed);
 
 										if (confirmed) {
-											console.log("用户确认上传");
+											// console.log("用户确认上传");
 											handleUpload(playlist);
 										} else {
-											console.log("用户取消上传");
+											// console.log("用户取消上传");
 											setIsModalVisible(true);
 										}
 									}}

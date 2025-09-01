@@ -6,7 +6,7 @@ export const getPlaylists = async () => {
 		const response = await axiosInstance.get("/netcloud/playlist");
 		return response.data;
 	} catch (error) {
-		console.error("获取歌单列表失败:", error);
+		// console.error("获取歌单列表失败:", error);
 		throw error;
 	}
 };

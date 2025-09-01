@@ -18,7 +18,7 @@ const LoginPage = () => {
 				}
 			} catch (error) {
 				// 接口调用失败或未登录，保持当前页面
-				console.log("无有效登录状态，请登录");
+				// console.log("无有效登录状态，请登录");
 			}
 		};
 
