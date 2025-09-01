@@ -18,35 +18,41 @@
 - 后端使用 go 版本为1.24.0，前端使用 npm 版本为10.9.0，node 版本为22.12.0，其余具体库版本见 go.mod 和 package.json
 - 使用内嵌 ffmpeg，可自行下载（会快一些）：[ffmpeg-master-latest-win64-gpl.zip](https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip)，解压，并将 ffmpeg.exe 添加到 banked/tool/ffmpeg ，或者用下边运行步骤中的 Makefile 下载
 - go 程序推荐使用 air 运行（可热重载），相关信息可查看 git 仓库：[☁️ Live reload for Go apps](https://github.com/air-verse/air)
+- 项目在线部署在 [https://youzill.top/bvtc](https://youzill.top/bvtc)
 
 ## :gear:运行
 
-### Docker Compose 部署
-- 建议创建一个 docker-compose.yml 文件拉取镜像并生成容器，样式如下
-  ```dockerfile
-  services:
-  banked:
-    image: youzill/bvtc-banked:latest
-    container_name: bvtc-banked-container
-    ports:
-      - "8081:8080"
-    environment:
-      - GIN_MODE=release
-      - TZ=Asia/Shanghai
-    restart: unless-stopped
+### 环境配置
 
-  fronted:
-    image: youzill/bvtc-fronted:latest
-    container_name: bvtc-fronted-container
-    ports:
-      - "8000:8000"
-    depends_on:
-      - banked
-    restart: unless-stopped
-  ```
-- 终端运行这个文件
+- 首先先完成.env文件的设置
+
   ```bash
-  docker compose up -d
+  cp env.template .env
+  ```
+- 然后完善.env文件
+
+### Docker Compose 部署
+
+- 首先拉取 Linux 所用的 FFMPEG
+
+  ```bash
+  cd banked
+  make setup-linux-ffmpeg
+  ```
+- 在根目录运行 docker-compose-local.yml
+
+  ```bash
+  cd ..
+  docker compose -f docker-compose.local.yml up -d
+  ```
+- 如果拉取不到基础镜像可以先拉镜像
+
+  ```bash
+  docker pull golang:1.24-alpine
+  docker pull ubuntu:22.04
+  docker pull node:22-alpine
+  docker pull nginx:alpine
+  docker pull redis:alpine
   ```
 
 ### Windows 部署
@@ -59,7 +65,7 @@
   ```
 - 运行 Makefile 安装 ffmpeg.exe
   ```bash
-  make setup-ffmpeg
+  make setup-windows-ffmpeg
   ```
 - go install 安装 air
   ```bash
@@ -111,7 +117,7 @@
 
 - [X]  load接口支持多文件上传，由于http超时限制，过长时间的上传会返回503
 - [ ]  保存的歌曲没有歌词，对歌词功能的完善（现在不支持读取 lrc 文件，没有什么想法，只能等大佬发现方法了）
-- [ ]  服务器部署
+- [X]  服务器部署
 
 ## ❤️ 鸣谢
 
