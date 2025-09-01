@@ -1,5 +1,9 @@
 banked/tmp
 banked/tool/ffmpeg/ffmpeg.exe
-banked/cloudnet/data
+banked/tool/ffmpeg/ffmpeg
+banked/user
 banked/log/logs
 test
+.env
+banked/user
+redis.conf
