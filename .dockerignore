@@ -2,7 +2,14 @@
 *.md
 *.log
 docker-compose.yml
+docker-compose.prod.yml
+deploy.sh
+DEPLOYMENT.md
 .gitignore
 .git
 banked/tool/ffmpeg/ffmpeg.exe
 banked/cloudnet/data
+banked/tmp
+banked/log/logs
+banked/user
+env.template
