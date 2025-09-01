@@ -1,61 +1,77 @@
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
-import axiosInstance from "../axiosInstance";
-import { sendCaptcha } from "../api/login";
-import { Input, Button, Card, message } from "antd";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { sendCaptcha, submitLogin } from "../api/login";
+import { Input, Button, Card, message, Form, Typography, Row, Col, Divider } from "antd";
 import { UserOutlined, LockOutlined } from "@ant-design/icons";
+
+const { Text } = Typography;
 
 const LoginForm = () => {
 	const navigate = useNavigate();
-	const [phone, setPhone] = useState("");
-	const [captcha, setCaptcha] = useState("");
+	const [form] = Form.useForm();
 	const [countdown, setCountdown] = useState(0);
 	const [loading, setLoading] = useState(false);
+	const [sending, setSending] = useState(false);
+	const timerRef = useRef(null);
+
+	useEffect(() => {
+		return () => {
+			if (timerRef.current) clearInterval(timerRef.current);
+		};
+	}, []);
+
+	const phoneRules = useMemo(
+		() => [
+			{ required: true, message: "请输入手机号" },
+			{
+				pattern: /^1\d{10}$/,
+				message: "请输入11位中国大陆手机号",
+			},
+		],
+		[]
+	);
+
+	const captchaRules = useMemo(
+		() => [
+			{ required: true, message: "请输入验证码" },
+			{ len: 4, message: "验证码为4位数字" },
+		],
+		[]
+	);
 
 	const handleSendCaptcha = async () => {
-		if (!phone.trim()) {
-			message.warning("请先输入手机号");
-			return;
-		}
 		try {
-			await sendCaptcha(phone);
+			const values = await form.validateFields(["phone"]);
+			setSending(true);
+			await sendCaptcha(values.phone);
 			message.success("验证码已发送，请注意查收");
-			let timer = 60;
-			setCountdown(timer);
-			const interval = setInterval(() => {
-				timer--;
-				setCountdown(timer);
-				if (timer <= 0) clearInterval(interval);
+			let counter = 60;
+			setCountdown(counter);
+			timerRef.current = setInterval(() => {
+				counter -= 1;
+				setCountdown(counter);
+				if (counter <= 0 && timerRef.current) {
+					clearInterval(timerRef.current);
+				}
 			}, 1000);
-		} catch (error) {
+		} catch (err) {
+			// 校验失败或请求失败
+			if (err?.errorFields) return;
 			message.error("验证码发送失败");
+		} finally {
+			setSending(false);
 		}
 	};
 
-	const handleLogin = async () => {
-		if (!phone || !captcha) {
-			message.warning("请填写手机号和验证码");
-			return;
-		}
+	const onFinish = async (values) => {
 		setLoading(true);
 		try {
-			const response = await axiosInstance.post(
-				"/netcloud/login/verify",
-				{
-					phone: phone,
-					captcha: captcha,
-				},
-				{
-					headers: {
-						"Content-Type": "application/json",
-					},
-				}
-			);
-			if (response.data.code === 200) {
-				message.success("登录成功");
+			const data = await submitLogin({ phone: values.phone, captcha: values.captcha });
+			if (data.code === 200) {
+				message.success("登录成功，正在跳转...");
 				navigate("/bilibili");
 			} else {
-				message.error(response.data.msg || "登录失败");
+				message.error(data.msg || "登录失败");
 			}
 		} catch (error) {
 			message.error("登录请求失败");
@@ -67,61 +83,64 @@ const LoginForm = () => {
 	return (
 		<div
 			style={{
-				display: "flex",
-				justifyContent: "center",
-				alignItems: "center",
 				minHeight: "100vh",
-				background: "#f0f2f5",
+				display: "flex",
+				alignItems: "center",
+				justifyContent: "center",
+				background: "linear-gradient(135deg, #ffffff 0%, #f6f7ff 100%)",
+				padding: 24,
 			}}
 		>
 			<Card
-				title="网易云音乐登录"
 				style={{
-					width: 400,
-					boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+					width: 420,
+					borderRadius: 14,
+					boxShadow: "0 6px 24px rgba(0,0,0,0.06)",
+					border: "1px solid rgba(0,0,0,0.06)",
 				}}
-				headStyle={{
-					textAlign: "center",
-					fontSize: "20px",
-					fontWeight: "bold",
-				}}
+				bodyStyle={{ padding: 26 }}
 			>
-				<form
-					onSubmit={(e) => {
-						e.preventDefault();
-						handleLogin();
-					}}
-					style={{ display: "flex", flexDirection: "column", gap: "16px" }}
+				<div style={{ textAlign: "center", marginBottom: 6 }}>
+					<Text strong style={{ fontSize: 18 }}>
+						登录
+					</Text>
+				</div>
+				<Divider style={{ margin: "10px 0 18px" }} />
+
+				<Form
+					form={form}
+					layout="vertical"
+					onFinish={onFinish}
+					requiredMark={false}
+					validateTrigger={["onBlur", "onSubmit"]}
 				>
-					<Input
-						size="large"
-						prefix={<UserOutlined />}
-						placeholder="请输入手机号"
-						value={phone}
-						onChange={(e) => setPhone(e.target.value)}
-					/>
-					<div style={{ display: "flex", gap: "8px" }}>
-						<Input
-							size="large"
-							prefix={<LockOutlined />}
-							placeholder="请输入验证码"
-							value={captcha}
-							onChange={(e) => setCaptcha(e.target.value)}
-						/>
-						<Button
-							type="primary"
-							size="large"
-							onClick={handleSendCaptcha}
-							disabled={countdown > 0}
-							style={{ width: "120px" }}
-						>
-							{countdown > 0 ? `${countdown}秒后重试` : "发送验证码"}
-						</Button>
-					</div>
-					<Button type="primary" size="large" htmlType="submit" loading={loading} style={{ marginTop: "8px" }}>
+					<Form.Item label="手机号" name="phone" rules={phoneRules}>
+						<Input size="large" addonBefore="+86" placeholder="请输入11位手机号" prefix={<UserOutlined />} />
+					</Form.Item>
+
+					<Form.Item label="验证码" name="captcha" rules={captchaRules}>
+						<Row gutter={8}>
+							<Col flex="auto">
+								<Input size="large" placeholder="请输入4位验证码" prefix={<LockOutlined />} maxLength={4} />
+							</Col>
+							<Col>
+								<Button
+									size="large"
+									type="primary"
+									onClick={handleSendCaptcha}
+									disabled={countdown > 0}
+									loading={sending}
+								>
+									{countdown > 0 ? `${countdown}s` : "获取验证码"}
+								</Button>
+							</Col>
+						</Row>
+					</Form.Item>
+
+					<Button block type="primary" size="large" htmlType="submit" loading={loading}>
 						登录
 					</Button>
-				</form>
+				</Form>
 			</Card>
 		</div>
 	);

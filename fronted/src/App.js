@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { App as AntdApp, ConfigProvider, message } from "antd";
 import LoginPage from "./pages/LoginPage";
 import BilibiliPage from "./pages/BilibiliPage";
@@ -17,10 +17,19 @@ function App() {
 			<AntdApp>
 				<Router>
 					<Routes>
-						<Route path="/" element={<BilibiliPage />} />
-						<Route path="/login" element={<LoginPage />} />
-						<Route path="/bilibili" element={<BilibiliPage />} />
-						<Route path="/playlists" element={<PlaylistList />} />
+						{/* 根路径重定向到bvtc */}
+						<Route path="/" element={<Navigate to="/bvtc" replace />} />
+
+						{/* 主要路由，都添加bvtc前缀 */}
+						<Route path="/bvtc" element={<BilibiliPage />} />
+						<Route path="/bvtc/login" element={<LoginPage />} />
+						<Route path="/bvtc/bilibili" element={<BilibiliPage />} />
+						<Route path="/bvtc/playlists" element={<PlaylistList />} />
+
+						{/* 兼容旧路径，重定向到新路径 */}
+						<Route path="/login" element={<Navigate to="/bvtc/login" replace />} />
+						<Route path="/bilibili" element={<Navigate to="/bvtc/bilibili" replace />} />
+						<Route path="/playlists" element={<Navigate to="/bvtc/playlists" replace />} />
 					</Routes>
 				</Router>
 			</AntdApp>

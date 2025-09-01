@@ -2,8 +2,8 @@ import axios from "axios";
 
 // 配置 axios 实例
 const axiosInstance = axios.create({
-	baseURL: "/api",
-	timeout: 3000, // 请求超时时间设置为30秒
+	baseURL: "/youzill/bvtc/api", // 修改为与nginx配置匹配的路径
+	timeout: 15000, // 请求超时时间设置为15秒
 	withCredentials: true, // 允许跨域携带cookie
 	headers: {
 		"Content-Type": "application/json",
