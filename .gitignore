@@ -5,6 +5,6 @@ banked/user
 banked/log/logs
 test
 .env
-env.template
 banked/user
 redis.conf
+fronted/nginx.conf
