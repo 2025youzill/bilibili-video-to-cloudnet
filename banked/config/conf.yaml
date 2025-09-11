@@ -1,6 +1,6 @@
 appName: "bilibili-video-to-cloudnet"
 log: # 日志配置
-  level: "info" # 生产环境改为info
+  level: "error"
   path: ${LOG_PATH}
 api:
   debug: false

@@ -2,9 +2,10 @@ package config
 
 import (
 	"log"
-	"os"
+	"path/filepath"
 	"time"
 
+	"github.com/joho/godotenv"
 	"github.com/spf13/viper"
 )
 
@@ -85,11 +86,11 @@ var c YamlConfig
 
 func init() {
 	// Docker部署时不需要加载.env文件，因为通过环境变量传递配置,本地运行时需要添加
-	// envPath := filepath.Join("..", ".env")
-	// err := godotenv.Load(envPath)
-	// if err != nil {
-	// 	panic("fail to load .env file,err : " + err.Error())
-	// }
+	envPath := filepath.Join("..", ".env")
+	err := godotenv.Load(envPath)
+	if err != nil {
+		panic("fail to load .env file,err : " + err.Error())
+	}
 
 	// 配置 viper
 	viper.SetConfigName("conf")     // 配置文件名称（不带扩展名）
@@ -179,12 +180,4 @@ func bindEnvVars() {
 // GetConfig 用于获取解析后的配置结构体
 func GetConfig() YamlConfig {
 	return c
-}
-
-// GetRedisPassword 获取Redis密码，支持环境变量
-func GetRedisPassword() string {
-	if password := os.Getenv("REDIS_PASSWORD"); password != "" {
-		return password
-	}
-	return c.Redis.Password
 }
