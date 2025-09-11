@@ -27,6 +27,8 @@ const BilibiliPage = () => {
 	const [uploadResult, setUploadResult] = useState(null);
 	const [avatarUrl, setAvatarUrl] = useState("");
 	const [isHovering, setIsHovering] = useState(false);
+	const [confirmModalVisible, setConfirmModalVisible] = useState(false);
+	const [selectedPlaylist, setSelectedPlaylist] = useState(null);
 
 	const showError = (msg) => {
 		messageApi.error(msg);
@@ -497,18 +499,8 @@ const BilibiliPage = () => {
 									onClick={() => {
 										// console.log("选择歌单:", playlist);
 										setIsModalVisible(false);
-
-										// 使用 window.confirm 替代 Modal.confirm
-										const confirmed = window.confirm(`是否确认上传到${playlist.pname || "云盘"}？`);
-										// console.log("确认结果:", confirmed);
-
-										if (confirmed) {
-											// console.log("用户确认上传");
-											handleUpload(playlist);
-										} else {
-											// console.log("用户取消上传");
-											setIsModalVisible(true);
-										}
+										setSelectedPlaylist(playlist);
+										setConfirmModalVisible(true);
 									}}
 								>
 									选择
@@ -593,6 +585,49 @@ const BilibiliPage = () => {
 							)}
 						</>
 					)}
+				</Modal>
+
+				{/* 上传确认弹框 */}
+				<Modal
+					title="确认上传"
+					open={confirmModalVisible}
+					onCancel={() => {
+						setConfirmModalVisible(false);
+						setSelectedPlaylist(null);
+						setIsModalVisible(true); // 重新打开歌单选择弹框
+					}}
+					footer={[
+						<Button
+							key="cancel"
+							onClick={() => {
+								setConfirmModalVisible(false);
+								setSelectedPlaylist(null);
+								setIsModalVisible(true); // 重新打开歌单选择弹框
+							}}
+						>
+							取消
+						</Button>,
+						<Button
+							key="confirm"
+							type="primary"
+							onClick={() => {
+								setConfirmModalVisible(false);
+								handleUpload(selectedPlaylist);
+								setSelectedPlaylist(null);
+							}}
+						>
+							确认上传
+						</Button>,
+					]}
+					centered
+					width={400}
+				>
+					<div style={{ textAlign: "center", padding: "20px 0" }}>
+						<p style={{ fontSize: "16px", color: "#666", margin: 0 }}>
+							是否确认将选中的 {selectedVideos.length} 首歌曲上传到
+							<span style={{ color: "#1890ff", fontWeight: "bold" }}>{selectedPlaylist?.pname || "云盘"}</span>？
+						</p>
+					</div>
 				</Modal>
 			</div>
 		</App>
