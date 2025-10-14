@@ -25,9 +25,10 @@ import (
 )
 
 type VideoStreamReq struct {
-	Bvid      []string `json:"bvid"`          // 稿件 bvid
-	Splaylist bool     `json:"splaylist"`     // 是否上传到歌单
-	Pid       int64    `json:"pid,omitempty"` // 歌单 id
+	Bvid          []string          `json:"bvid"`                    // 稿件 bvid
+	Splaylist     bool              `json:"splaylist"`               // 是否上传到歌单
+	Pid           int64             `json:"pid,omitempty"`           // 歌单 id
+	TitleOverride map[string]string `json:"titleOverride,omitempty"` // 可选：自定义标题，key 为 bvid
 }
 
 // 任务结构体
@@ -106,7 +107,7 @@ func CreateLoadMP4Task(ctx *gin.Context) {
 	task := taskManager.createTask(req)
 
 	// 启动异步处理
-	go LoadMP4Async(task.ID,cookieFile)
+	go LoadMP4Async(task.ID, cookieFile)
 
 	// 返回任务ID
 	ctx.JSON(http.StatusOK, response.SuccessMsg(map[string]string{"task_id": task.ID}))
@@ -158,7 +159,7 @@ func CheckLoadMP4Task(ctx *gin.Context) {
 }
 
 // processLoadMP4Task 异步处理任务
-func LoadMP4Async(taskID string,cookiefile string) {
+func LoadMP4Async(taskID string, cookiefile string) {
 	task, _ := taskManager.getTask(taskID)
 	// 更新状态为运行中
 	taskManager.updateTask(taskID, constant.TaskStatusRunning, 0, "")
@@ -199,7 +200,17 @@ func LoadMP4Async(taskID string,cookiefile string) {
 				return
 			}
 
-			title := sanitizeFilename(videoinfo.Title)
+			// 应用可选的标题覆盖
+			title := videoinfo.Title
+			if task != nil && task.Request.TitleOverride != nil {
+				if t, ok := task.Request.TitleOverride[bvid]; ok {
+					t = strings.TrimSpace(t)
+					if t != "" {
+						title = t
+					}
+				}
+			}
+			title = sanitizeFilename(title)
 			url := stream.Durl[0].Url
 			filename := filepath.Join(constant.Filepath, fmt.Sprintf("%s.mp4", title))
 			defer os.Remove(filename)
@@ -253,13 +264,13 @@ func LoadMP4Async(taskID string,cookiefile string) {
 			}
 			audioreq.CoverArt = coverfilename
 
-			err = TranslateVideoToAudio(audioreq, task.Request.Splaylist, task.Request.Pid,cookiefile)
+			err = TranslateVideoToAudio(audioreq, task.Request.Splaylist, task.Request.Pid, cookiefile)
 			if err != nil {
 				resultChan <- result{Title: videoinfo.Title, Err: fmt.Errorf("上传失败: %v", err)}
 				return
 			}
 
-			resultChan <- result{Title: videoinfo.Title, Err: nil}
+			resultChan <- result{Title: title, Err: nil}
 		}(i, bvid)
 	}
 

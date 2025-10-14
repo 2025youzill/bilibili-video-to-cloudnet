@@ -6,6 +6,7 @@ import (
 	"runtime"
 	"strings"
 
+	routeai "bvtc/ai"
 	"bvtc/bilibili"
 	"bvtc/cloudnet"
 	"bvtc/config"
@@ -39,9 +40,13 @@ func NewRouter() *gin.Engine {
 		group.POST("/netcloud/login", cloudnet.SendByPhone)          // 发送验证码
 		group.POST("/netcloud/login/verify", cloudnet.VerifyCaptcha) // 验证验证码
 
+		// 测试接口
+		group.GET("/test/bilibili/download", bilibili.DownloadVideo)
+		group.GET("/test/bilibili/desc", bilibili.GetVideoDesc)
 		// 需要认证的接口
 		authGroup := group.Group("/")
 		authGroup.Use(middleware.SessionAuthMiddleware())
+
 		{
 			authGroup.GET("/netcloud/login/check", cloudnet.CheckCookie)  // 检查登陆状态
 			authGroup.POST("/netcloud/logout", cloudnet.DeleteCookie)     // 退出登录,删除状态（改为POST防CSRF）
@@ -50,11 +55,12 @@ func NewRouter() *gin.Engine {
 
 			authGroup.POST("/bilibili/createtask", bilibili.CreateLoadMP4Task)      // 创建任务
 			authGroup.GET("/bilibili/checktask/:taskId", bilibili.CheckLoadMP4Task) // 查询任务状态
-			authGroup.GET("/bilibili/list", bilibili.GetVideoList)
-
+			authGroup.GET("/bilibili/list", bilibili.GetVideoList)                  // 视频列表
+			authGroup.POST("/bilibili/suggest-title", routeai.SuggestTitle)         //生成标题
 			// 暂时不用下面接口
 			authGroup.GET("/bilibili/login", bilibili.BiliLogin)
 			authGroup.GET("/bilibili/login/check", bilibili.BiliLoginWithCookie)
+
 		}
 	}
 	return server

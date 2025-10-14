@@ -10,58 +10,59 @@ import (
 )
 
 type YamlConfig struct {
-	AppName  string
-	Log      LogConfig
-	Api      ApiConfig
-	Redis    RedisConfig
-	Jwt      JwtConfig
-	Spew     SpewConfig
-	Music    MusicConfig
-	Security SecurityConfig
+	AppName  string         `mapstructure:"appName"`
+	Log      LogConfig      `mapstructure:"log"`
+	Api      ApiConfig      `mapstructure:"api"`
+	Redis    RedisConfig    `mapstructure:"redis"`
+	Jwt      JwtConfig      `mapstructure:"jwt"`
+	Spew     SpewConfig     `mapstructure:"spew"`
+	Music    MusicConfig    `mapstructure:"music"`
+	Security SecurityConfig `mapstructure:"security"`
+	Ai       AIConfig       `mapstructure:"Ai"`
 }
 
 type LogConfig struct {
-	Level string
-	Path  string
+	Level string `mapstructure:"level"`
+	Path  string `mapstructure:"path"`
 }
 
 type cookie struct {
-	Filepath string
-	Interval time.Duration
+	Filepath string        `mapstructure:"filepath"`
+	Interval time.Duration `mapstructure:"interval"`
 }
 
 type ApiConfig struct {
-	Debug     bool
-	Timeout   time.Duration
-	Retry     int
-	Cookie    cookie
-	RateLimit RateLimitConfig
+	Debug     bool            `mapstructure:"debug"`
+	Timeout   time.Duration   `mapstructure:"timeout"`
+	Retry     int             `mapstructure:"retry"`
+	Cookie    cookie          `mapstructure:"cookie"`
+	RateLimit RateLimitConfig `mapstructure:"rateLimit"`
 }
 
 type RateLimitConfig struct {
-	RequestsPerMinute int
-	BurstSize         int
+	RequestsPerMinute int `mapstructure:"requestsPerMinute"`
+	BurstSize         int `mapstructure:"burstSize"`
 }
 
 type RedisConfig struct {
-	Host     string
-	Port     string
-	Password string
-	DB       int
+	Host     string `mapstructure:"host"`
+	Port     string `mapstructure:"port"`
+	Password string `mapstructure:"password"`
+	DB       int    `mapstructure:"db"`
 }
 
 type JwtConfig struct {
-	Secret  string
-	Expires time.Duration
+	Secret  string        `mapstructure:"secret"`
+	Expires time.Duration `mapstructure:"expires"`
 }
 
 type SpewConfig struct {
-	Indent                string
-	MaxDepth              int
-	DisableMethods        bool
-	DisablePointerMethods bool
-	ContinueOnMethod      bool
-	SortKeys              bool
+	Indent                string `mapstructure:"indent"`
+	MaxDepth              int    `mapstructure:"maxdepth"`
+	DisableMethods        bool   `mapstructure:"disablemethods"`
+	DisablePointerMethods bool   `mapstructure:"disablepointermethods"`
+	ContinueOnMethod      bool   `mapstructure:"continueonmethod"`
+	SortKeys              bool   `mapstructure:"sortkeys"`
 }
 
 type MusicConfig struct {
@@ -70,16 +71,25 @@ type MusicConfig struct {
 }
 
 type SecurityConfig struct {
-	SessionSecret    string
-	MaxFileSize      string
-	AllowedFileTypes []string
-	CORS             CORSConfig
+	SessionSecret    string     `mapstructure:"session_secret"`
+	MaxFileSize      string     `mapstructure:"max_file_size"`
+	AllowedFileTypes []string   `mapstructure:"allowed_file_types"`
+	CORS             CORSConfig `mapstructure:"cors"`
 }
 
 type CORSConfig struct {
-	AllowedOrigins []string
-	AllowedMethods []string
-	AllowedHeaders []string
+	AllowedOrigins []string `mapstructure:"allowed_origins"`
+	AllowedMethods []string `mapstructure:"allowed_methods"`
+	AllowedHeaders []string `mapstructure:"allowed_headers"`
+}
+
+type AIConfig struct {
+	Provider       string        `mapstructure:"provider"`
+	BaseURL        string        `mapstructure:"base_url"`
+	Model          string        `mapstructure:"model"`
+	Timeout        time.Duration `mapstructure:"timeout"`
+	MaxTitleLength int           `mapstructure:"max_title_length"`
+	CacheTTL       time.Duration `mapstructure:"cache_ttl"`
 }
 
 var c YamlConfig
@@ -162,6 +172,26 @@ func bindEnvVars() {
 	}
 	if err := viper.BindEnv("api.cookie.interval", "NETEASE_API_COOKIE_INTERVAL"); err != nil {
 		log.Printf("Failed to bind NETEASE_API_COOKIE_INTERVAL: %v", err)
+	}
+
+	// AI配置
+	if err := viper.BindEnv("ai.provider", "AI_PROVIDER"); err != nil {
+		log.Printf("Failed to bind AI_PROVIDER: %v", err)
+	}
+	if err := viper.BindEnv("ai.base_url", "AI_BASE_URL"); err != nil {
+		log.Printf("Failed to bind AI_BASE_URL: %v", err)
+	}
+	if err := viper.BindEnv("ai.model", "AI_MODEL"); err != nil {
+		log.Printf("Failed to bind AI_MODEL: %v", err)
+	}
+	if err := viper.BindEnv("ai.timeout", "AI_TIMEOUT_SECONDS"); err != nil {
+		log.Printf("Failed to bind AI_TIMEOUT_SECONDS: %v", err)
+	}
+	if err := viper.BindEnv("ai.max_title_length", "AI_MAX_TITLE_LENGTH"); err != nil {
+		log.Printf("Failed to bind AI_MAX_TITLE_LENGTH: %v", err)
+	}
+	if err := viper.BindEnv("ai.cache_ttl", "AI_CACHE_TTL"); err != nil {
+		log.Printf("Failed to bind AI_CACHE_TTL: %v", err)
 	}
 }
 

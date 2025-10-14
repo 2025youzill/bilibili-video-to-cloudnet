@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Input, Button, List, message, Modal, Checkbox, Space, Pagination, App, Progress } from "antd";
+import { Input, Button, List, message, Modal, Checkbox, Space, Pagination, App, Progress, Spin } from "antd";
 import { UserOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../axiosInstance";
@@ -29,6 +29,54 @@ const BilibiliPage = () => {
 	const [isHovering, setIsHovering] = useState(false);
 	const [confirmModalVisible, setConfirmModalVisible] = useState(false);
 	const [selectedPlaylist, setSelectedPlaylist] = useState(null);
+	// 根据 bvid 获取原标题的工具函数
+	const getOriginalTitleByBvid = (bvid) => {
+		if (!videoInfo?.video_list) return "";
+		const found = videoInfo.video_list.find((v) => v.bvid === bvid);
+		return found?.title || "";
+	};
+
+	// 调用后端 AI 建议接口，批量预填建议标题
+	const prepareTitleSuggestions = async () => {
+		setTitleSuggesting(true);
+		try {
+			const overrides = {};
+			for (const bvid of selectedVideos) {
+				try {
+					const res = await axiosInstance.post("bilibili/suggest-title", { bvid }, { timeout: 60000 });
+					const suggested = res.data?.data?.suggestedTitle;
+					if (!suggested) throw new Error("no suggestion");
+					overrides[bvid] = suggested;
+				} catch (_) {
+					// AI-only：失败则直接抛错
+					throw _;
+				}
+			}
+			setTitleOverride(overrides);
+		} finally {
+			setTitleSuggesting(false);
+		}
+	};
+
+	// 单个条目重新生成建议
+	const regenerateSuggestion = async (bvid) => {
+		setTitleSuggesting(true);
+		try {
+			const res = await axiosInstance.post("bilibili/suggest-title", { bvid }, { timeout: 60000 });
+			const suggested = res.data?.data?.suggestedTitle;
+			if (!suggested) throw new Error("no suggestion");
+			setTitleOverride((prev) => ({ ...prev, [bvid]: suggested }));
+		} finally {
+			setTitleSuggesting(false);
+		}
+	};
+
+	// 新增：标题选择与编辑相关状态
+	const [keepTitleModalVisible, setKeepTitleModalVisible] = useState(false);
+	const [titleEditModalVisible, setTitleEditModalVisible] = useState(false);
+	const [useOriginalTitle, setUseOriginalTitle] = useState(true);
+	const [titleOverride, setTitleOverride] = useState({}); // { bvid: title }
+	const [titleSuggesting, setTitleSuggesting] = useState(false);
 
 	const showError = (msg) => {
 		messageApi.error(msg);
@@ -154,6 +202,8 @@ const BilibiliPage = () => {
 				bvid: selectedVideos,
 				splaylist: !!playlist.pid,
 				pid: playlist.pid || undefined,
+				// 仅当用户选择自定义时，才传递覆盖标题
+				...(useOriginalTitle ? {} : { titleOverride: titleOverride }),
 			};
 
 			// 1. 发起任务创建请求，获取task_id
@@ -263,6 +313,25 @@ const BilibiliPage = () => {
 
 	return (
 		<App>
+			{/* AI 标题生成加载遮罩 */}
+			{titleSuggesting && (
+				<div
+					style={{
+						position: "fixed",
+						top: 0,
+						left: 0,
+						width: "100%",
+						height: "100%",
+						background: "rgba(255,255,255,0.6)",
+						display: "flex",
+						alignItems: "center",
+						justifyContent: "center",
+						zIndex: 2000,
+					}}
+				>
+					<Spin tip="AI 正在生成标题..." size="large" />
+				</div>
+			)}
 			<div
 				style={{
 					maxWidth: "800px",
@@ -500,7 +569,8 @@ const BilibiliPage = () => {
 										// console.log("选择歌单:", playlist);
 										setIsModalVisible(false);
 										setSelectedPlaylist(playlist);
-										setConfirmModalVisible(true);
+										// 先询问是否保留原标题
+										setKeepTitleModalVisible(true);
 									}}
 								>
 									选择
@@ -510,6 +580,110 @@ const BilibiliPage = () => {
 					/>
 				</Modal>
 
+				{/* 是否保留原标题弹框 */}
+				<Modal
+					title="是否保留原视频名称？"
+					open={keepTitleModalVisible}
+					onCancel={() => {
+						setKeepTitleModalVisible(false);
+						setSelectedPlaylist(null);
+						setIsModalVisible(true);
+					}}
+					footer={[
+						<Button
+							key="yes"
+							onClick={() => {
+								setUseOriginalTitle(true);
+								setKeepTitleModalVisible(false);
+								setConfirmModalVisible(true);
+							}}
+						>
+							是，保留原标题
+						</Button>,
+						<Button
+							key="no"
+							type="primary"
+							loading={titleSuggesting}
+							onClick={async () => {
+								setUseOriginalTitle(false);
+								setKeepTitleModalVisible(false);
+								try {
+									await prepareTitleSuggestions();
+									setTitleEditModalVisible(true);
+								} catch (e) {
+									message.error("AI 标题建议失败，请稍后重试");
+									setSelectedPlaylist(null);
+								}
+							}}
+						>
+							否，我要自定义
+						</Button>,
+					]}
+					centered
+					width={480}
+				>
+					<div style={{ textAlign: "center", padding: "10px 0" }}>
+						<p style={{ fontSize: "14px", color: "#666", margin: 0 }}>可先给出 AI 建议名，再自行修改</p>
+					</div>
+				</Modal>
+
+				{/* 标题编辑弹框 */}
+				<Modal
+					title="编辑上传标题（可基于 AI 建议）"
+					open={titleEditModalVisible}
+					onCancel={() => {
+						setTitleEditModalVisible(false);
+						setSelectedPlaylist(null);
+						setIsModalVisible(true);
+					}}
+					footer={[
+						<Button
+							key="back"
+							onClick={() => {
+								setTitleEditModalVisible(false);
+								setKeepTitleModalVisible(true);
+							}}
+						>
+							上一步
+						</Button>,
+						<Button
+							key="confirm"
+							type="primary"
+							disabled={titleSuggesting}
+							onClick={() => {
+								setTitleEditModalVisible(false);
+								setConfirmModalVisible(true);
+							}}
+						>
+							确定
+						</Button>,
+					]}
+					centered
+					width={640}
+				>
+					<div style={{ maxHeight: 360, overflowY: "auto" }}>
+						{selectedVideos.map((bvid) => {
+							const original = getOriginalTitleByBvid(bvid);
+							return (
+								<div key={bvid} style={{ marginBottom: 12 }}>
+									<div style={{ fontSize: 12, color: "#999", marginBottom: 6 }}>BV号：{bvid}</div>
+									<div style={{ fontSize: 12, color: "#666", marginBottom: 6 }}>原标题：{original}</div>
+									<div style={{ display: "flex", gap: 8 }}>
+										<Input
+											placeholder="请输入歌曲名"
+											value={titleOverride[bvid] ?? ""}
+											onChange={(e) => setTitleOverride((prev) => ({ ...prev, [bvid]: e.target.value }))}
+											maxLength={60}
+										/>
+										<Button size="small" loading={titleSuggesting} onClick={() => regenerateSuggestion(bvid)}>
+											重新生成
+										</Button>
+									</div>
+								</div>
+							);
+						})}
+					</div>
+				</Modal>
 				<Modal
 					title="登录提示"
 					open={isLoginModalVisible}

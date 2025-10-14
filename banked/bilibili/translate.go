@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"bvtc/cloudnet"
 	"bvtc/constant"
 	"bvtc/log"
 	"bvtc/tool/ffmpeg"
@@ -23,7 +22,7 @@ type AudioReq struct {
 	CoverArt string
 }
 
-func TranslateVideoToAudio(req AudioReq, splaylist bool, pid int64,cookiefile string) error {
+func TranslateVideoToAudio(req AudioReq, splaylist bool, pid int64, cookiefile string) error {
 	currentDir, err := os.Getwd()
 	if err != nil {
 		log.Logger.Error("获取当前目录失败", log.Any("err", err))
@@ -37,25 +36,25 @@ func TranslateVideoToAudio(req AudioReq, splaylist bool, pid int64,cookiefile st
 	}
 
 	outputFile := strings.TrimSuffix(req.Filename, ".mp4") + ".mp3"
-	defer os.Remove(outputFile) // 确保最后删除临时文件
+	// defer os.Remove(outputFile) // 确保最后删除临时文件
 
 	ffmpegPath, err := ffmpeg.ExtractFFmpeg()
 	if err != nil {
 		log.Logger.Error("FFmpeg 初始化失败", log.Any("err", err))
 		return errors.New("FFmpeg 初始化失败")
 	}
-	defer os.Remove(ffmpegPath)
+	// defer os.Remove(ffmpegPath)
 
 	// 执行转换
 	if err := convertToMP3(ffmpegPath, inputFile, outputFile, req); err != nil {
 		return errors.New("转换失败")
 	}
 
-	err = cloudnet.UploadToNetCloud(outputFile, splaylist, pid,cookiefile)
-	if err != nil {
-		log.Logger.Error("上传失败", log.Any("err", err))
-		return err
-	}
+	// err = cloudnet.UploadToNetCloud(outputFile, splaylist, pid,cookiefile)
+	// if err != nil {
+	// 	log.Logger.Error("上传失败", log.Any("err", err))
+	// 	return err
+	// }
 
 	return nil
 }

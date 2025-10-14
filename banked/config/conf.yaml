@@ -1,6 +1,6 @@
 appName: "bilibili-video-to-cloudnet"
 log: # 日志配置
-  level: "error"
+  level: "info"
   path: ${LOG_PATH}
 api:
   debug: false
@@ -32,3 +32,10 @@ security:
     allowed_origins: ${CORS_ALLOWED_ORIGINS}
     allowed_methods: ${CORS_ALLOWED_METHODS}
     allowed_headers: ${CORS_ALLOWED_HEADERS}
+Ai:
+  provider: ${AI_PROVIDER}
+  base_url: ${AI_BASE_URL}
+  model: ${AI_MODEL}
+  timeout: ${AI_TIMEOUT_SECONDS}
+  max_title_length: ${AI_MAX_TITLE_LENGTH}
+  cache_ttl: ${AI_CACHE_TTL}
