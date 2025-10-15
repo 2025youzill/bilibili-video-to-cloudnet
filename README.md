@@ -18,7 +18,7 @@
 - 后端使用 go 版本为 1.24.5，前端使用 npm 版本为 10.9.0，node 版本为 22.12.0，其余具体库版本见 go.mod 和 package.json
 - 使用内嵌 ffmpeg，可自行下载（会快一些）：[ffmpeg-master-latest-win64-gpl.zip](https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip)，解压，并将 ffmpeg.exe 添加到 banked/tool/ffmpeg ，或者用下边运行步骤中的 Makefile 下载
 - go 程序推荐使用 air 运行（可热重载），相关信息可查看 git 仓库：[☁️ Live reload for Go apps](https://github.com/air-verse/air)
-- 项目在线部署在 [https://youzill.top/bvtc](https://youzill.top/bvtc)
+- 项目在线部署在 ~~[https://youzill.top/bvtc](https://youzill.top/bvtc)~~ (服务器暂时过期了，等生成歌名接口完成后再重新部署)
 
 ## :gear:运行
 
