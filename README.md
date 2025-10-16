@@ -19,7 +19,7 @@
 - 使用内嵌 ffmpeg，可自行下载（会快一些）：[ffmpeg-master-latest-win64-gpl.zip](https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip)，解压，并将 ffmpeg.exe 添加到 banked/tool/ffmpeg ，或者用下边运行步骤中的 Makefile 下载
 - 歌名识别部分由于设备限制暂时所用为 ollama 下的阿里 qwen 2.5 3B 的模型，单首歌响应时间约为 10s 左右，采用 SSE 流式传输，有时候可能有些歌名可能会丢失~~(奇怪的bug)~~，点击“重新生成”便可以，有缓存后很快输出。
 - go 程序推荐使用 air 运行（可热重载），相关信息可查看 git 仓库：[☁️ Live reload for Go apps](https://github.com/air-verse/air)
-- 项目在线部署在 [https://youzill.top/bvtc](https://youzill.top/bvtc)
+- 项目在线部署在 ~~[https://youzill.top/bvtc](https://youzill.top/bvtc)~~ (服务器暂时过期了，等生成歌名接口完成后再重新部署)
 
 ## :gear:运行
 
