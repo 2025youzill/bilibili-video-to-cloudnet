@@ -9,7 +9,7 @@
 ## :blue_book:项目介绍
 
 - BVTC（Bilibili-Video-To-CloudNet）是一个将 B 站视频转换为 MP4 格式并上传到网易云的网站，输入 Bvid 和登录网易云后，后端采用 **API** 接口抓取视频，FFmpeg 提取音频，然后通过网易云网盘上传到歌单。
-- 如果你在 b 站有喜欢的音乐但是网易云没有，欢迎使用 BVTC，如果你有喜欢的 AMSR 但是网易云没有，欢迎使用 BVTC，~~如果你有喜欢的美女视频，欢迎分享给我 ☝️~~
+- 如果你在 b 站有喜欢的音乐但是网易云没有，欢迎使用 BVTC，如果你有喜欢的 AMSR 但是网易云没有，欢迎使用 BVTC，<s>如果你有喜欢的美女视频，欢迎分享给我 ☝️</s>.
 - 如果有帮助到你或者你很喜欢的话，给鼠鼠一个 🌟 再走吧
 - 如果你发现了什么问题或者有任何改进的建议以及想要新增的功能，不要害羞，无需吝啬你的 [issue](https://github.com/2025youzill/bilibili-video-to-cloudnet/issues/new) 和 pr ,如果你不清楚如何提交，可以参考 [Github Docs](https://docs.github.com/en/pull-requests)。
 
@@ -17,7 +17,7 @@
 
 - 后端使用 go 版本为 1.24.5，前端使用 npm 版本为 10.9.0，node 版本为 22.12.0，其余具体库版本见 go.mod 和 package.json
 - 使用内嵌 ffmpeg，可自行下载（会快一些）：[ffmpeg-master-latest-win64-gpl.zip](https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip)，解压，并将 ffmpeg.exe 添加到 banked/tool/ffmpeg ，或者用下边运行步骤中的 Makefile 下载
-- 歌名识别部分由于设备限制暂时所用为 ollama 下的阿里 qwen 2.5 3B 的模型，单首歌响应时间约为 10s 左右，采用 SSE 流式传输，有时候可能有些歌名可能会丢失~~(奇怪的bug)~~，点击“重新生成”便可以，有缓存后很快输出。
+- 歌名识别部分由于设备限制暂时所用为 ollama 下的阿里 qwen 2.5 3B 的模型，单首歌响应时间约为 10s 左右，采用 SSE 流式传输，有时候可能有些歌名返回会丢失 <s>(奇怪的bug)</s> ，点击“重新生成”便可以，有缓存后很快输出。
 - go 程序推荐使用 air 运行（可热重载），相关信息可查看 git 仓库：[☁️ Live reload for Go apps](https://github.com/air-verse/air)
 - 项目在线部署在 ~~[https://youzill.top/bvtc](https://youzill.top/bvtc)~~ (服务器暂时过期了，等生成歌名接口完成后再重新部署)
 
