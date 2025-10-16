@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	"bvtc/ai"
 	"bvtc/client"
 	"bvtc/config"
 	"bvtc/log"
@@ -27,6 +28,7 @@ func main() {
 	// 初始化redis
 	redis_pool.InitRedis()
 
+	go ai.WarmupAITitle()
 	newRouter := route.NewRouter()
 	s := &http.Server{
 		Addr:           ":8080",

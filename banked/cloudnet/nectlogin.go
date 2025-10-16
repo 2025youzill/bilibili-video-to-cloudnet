@@ -181,8 +181,6 @@ func CheckCookie(ctx *gin.Context) {
 		return
 	}
 
-	log.Logger.Info("Session ID retrieved", log.String("session_id", sid))
-
 	rdb := redis_pool.GetRdb()
 	rtcx := redis_pool.GetRctx()
 	key := "session:" + sid
@@ -193,17 +191,15 @@ func CheckCookie(ctx *gin.Context) {
 		return
 	}
 
-	log.Logger.Info("Cookie file retrieved from Redis", log.String("cookieFile", cookieFile))
-
 	// 检查cookie文件是否存在且有内容
 	cfg := config.GetConfig()
 	cookieFilePath := filepath.Join(append(strings.Split(cfg.Api.Cookie.Filepath, "/"), cookieFile)...)
-	if cookieContent, err := os.ReadFile(cookieFilePath); err != nil {
+	if _, err := os.ReadFile(cookieFilePath); err != nil {
 		log.Logger.Error("Cookie file not found or cannot be read", log.String("filePath", cookieFilePath), log.Any("err", err))
 		ctx.JSON(http.StatusBadRequest, response.FailMsg("Cookie file not found"))
 		return
 	} else {
-		log.Logger.Info("Cookie file content", log.String("filePath", cookieFilePath), log.String("content", string(cookieContent)))
+		log.Logger.Info("Cookie file content")
 	}
 
 	api, _, err := client.MultiInitNetcloudCli(cookieFile)
@@ -214,7 +210,6 @@ func CheckCookie(ctx *gin.Context) {
 	}
 
 	status := api.NeedLogin(context.Background())
-	log.Logger.Info("NeedLogin check result", log.Any("needLogin", status))
 
 	if status {
 		log.Logger.Error("user need login")

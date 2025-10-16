@@ -90,6 +90,7 @@ type AIConfig struct {
 	Timeout        time.Duration `mapstructure:"timeout"`
 	MaxTitleLength int           `mapstructure:"max_title_length"`
 	CacheTTL       time.Duration `mapstructure:"cache_ttl"`
+	Concurrency    int64         `mapstructure:"concurrency"`
 }
 
 var c YamlConfig
@@ -192,6 +193,9 @@ func bindEnvVars() {
 	}
 	if err := viper.BindEnv("ai.cache_ttl", "AI_CACHE_TTL"); err != nil {
 		log.Printf("Failed to bind AI_CACHE_TTL: %v", err)
+	}
+	if err := viper.BindEnv("ai.concurrency", "AI_CONCURRENCY"); err != nil {
+		log.Printf("Failed to bind AI_CONCURRENCY: %v", err)
 	}
 }
 

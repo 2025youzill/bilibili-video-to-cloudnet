@@ -53,10 +53,10 @@ func NewRouter() *gin.Engine {
 			authGroup.GET("/netcloud/playlist", cloudnet.ShowPlaylist)    //获取歌单
 			authGroup.GET("/netcloud/useravatar", cloudnet.GetUserAvatar) //获取用户头像
 
-			authGroup.POST("/bilibili/createtask", bilibili.CreateLoadMP4Task)      // 创建任务
-			authGroup.GET("/bilibili/checktask/:taskId", bilibili.CheckLoadMP4Task) // 查询任务状态
-			authGroup.GET("/bilibili/list", bilibili.GetVideoList)                  // 视频列表
-			authGroup.POST("/bilibili/suggest-title", routeai.SuggestTitle)         //生成标题
+			authGroup.POST("/bilibili/createtask", bilibili.CreateLoadMP4Task)                     // 创建任务
+			authGroup.GET("/bilibili/checktask/:taskId", bilibili.CheckLoadMP4Task)                // 查询任务状态
+			authGroup.GET("/bilibili/list", bilibili.GetVideoList)                                 // 视频列表
+			authGroup.GET("/bilibili/suggest-title-batch/stream", routeai.SuggestTitleBatchStream) // 生成标题（SSE流式）
 			// 暂时不用下面接口
 			authGroup.GET("/bilibili/login", bilibili.BiliLogin)
 			authGroup.GET("/bilibili/login/check", bilibili.BiliLoginWithCookie)

@@ -189,7 +189,8 @@ func LoadMP4Async(taskID string, cookiefile string) {
 
 			videoinfo, err := cli.GetVideoInfo(bilibili.VideoParam{Bvid: bvid})
 			if err != nil {
-				resultChan <- result{Title: videoinfo.Title, Err: fmt.Errorf("get video info fail: %v", err)}
+				// cannot reference videoinfo when err != nil; use bvid as title fallback
+				resultChan <- result{Title: bvid, Err: fmt.Errorf("get video info fail: %v", err)}
 				return
 			}
 			cid := videoinfo.Cid

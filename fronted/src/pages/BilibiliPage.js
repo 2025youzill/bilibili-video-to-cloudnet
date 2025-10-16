@@ -36,39 +36,117 @@ const BilibiliPage = () => {
 		return found?.title || "";
 	};
 
-	// 调用后端 AI 建议接口，批量预填建议标题
+	// 调用后端 AI 建议接口（SSE流式），批量预填建议标题
 	const prepareTitleSuggestions = async () => {
+		if (!selectedVideos || selectedVideos.length === 0) return;
 		setTitleSuggesting(true);
-		try {
-			const overrides = {};
-			for (const bvid of selectedVideos) {
-				try {
-					const res = await axiosInstance.post("bilibili/suggest-title", { bvid }, { timeout: 60000 });
-					const suggested = res.data?.data?.suggestedTitle;
-					if (!suggested) throw new Error("no suggestion");
-					overrides[bvid] = suggested;
-				} catch (_) {
-					// AI-only：失败则直接抛错
-					throw _;
-				}
+		return new Promise((resolve, reject) => {
+			let receivedAny = false;
+			try {
+				const base = axiosInstance.defaults.baseURL || "/api";
+				const url = `${base}/bilibili/suggest-title-batch/stream?bvids=${encodeURIComponent(selectedVideos.join(","))}`;
+				const es = new EventSource(url);
+
+				es.addEventListener("open", () => {
+					// 可在这里提示已开始
+				});
+
+				const handleProgress = (ev) => {
+					try {
+						const data = JSON.parse(ev.data || "{}");
+						const { bvid, suggestedTitle, error } = data || {};
+						if (!bvid && Array.isArray(data?.results)) {
+							// 兼容聚合结构（防旧格式）
+							const map = {};
+							data.results.forEach((r) => {
+								if (r.bvid && r.suggestedTitle) map[r.bvid] = r.suggestedTitle;
+							});
+							if (Object.keys(map).length) {
+								setTitleOverride((prev) => ({ ...prev, ...map }));
+							}
+							return;
+						}
+						if (bvid && suggestedTitle) {
+							setTitleOverride((prev) => ({ ...prev, [bvid]: suggestedTitle }));
+						}
+						if (error) {
+							// 单项失败仅提示，不中断整体
+							// message.warn?.(`AI 建议失败(${bvid}): ${error}`);
+						}
+						// 第一条进度就关闭转圈，边流边填
+						if (!receivedAny) {
+							receivedAny = true;
+							// 保持轻遮罩直到 done，避免“立刻消失”的突兀
+						}
+					} catch {
+						/* ignore */
+					}
+				};
+				es.addEventListener("progress", handleProgress);
+				// 某些代理会把未命名事件当默认 message 发
+				es.onmessage = handleProgress;
+
+				es.addEventListener("error", (ev) => {
+					// 不主动关闭，交给 EventSource 自动重连，避免只收到首条后断流
+					// 可以在这里添加轻量提示或日志
+					// console.warn("SSE error, waiting for reconnect", ev);
+				});
+
+				es.addEventListener("done", () => {
+					es.close();
+					setTitleSuggesting(false);
+					resolve();
+				});
+			} catch (e) {
+				setTitleSuggesting(false);
+				reject(e);
 			}
-			setTitleOverride(overrides);
-		} finally {
-			setTitleSuggesting(false);
-		}
+		});
 	};
 
-	// 单个条目重新生成建议
+	// 单个条目重新生成建议（SSE单条）
 	const regenerateSuggestion = async (bvid) => {
+		if (!bvid) return;
 		setTitleSuggesting(true);
-		try {
-			const res = await axiosInstance.post("bilibili/suggest-title", { bvid }, { timeout: 60000 });
-			const suggested = res.data?.data?.suggestedTitle;
-			if (!suggested) throw new Error("no suggestion");
-			setTitleOverride((prev) => ({ ...prev, [bvid]: suggested }));
-		} finally {
-			setTitleSuggesting(false);
-		}
+		return new Promise((resolve, reject) => {
+			let receivedAny = false;
+			try {
+				const base = axiosInstance.defaults.baseURL || "/api";
+				const url = `${base}/bilibili/suggest-title-batch/stream?bvids=${encodeURIComponent(bvid)}`;
+				const es = new EventSource(url);
+
+				const handleSingleProgress = (ev) => {
+					try {
+						const data = JSON.parse(ev.data || "{}");
+						if (data?.bvid === bvid && data?.suggestedTitle) {
+							setTitleOverride((prev) => ({ ...prev, [bvid]: data.suggestedTitle }));
+						}
+						if (!receivedAny) {
+							receivedAny = true;
+							// 保持轻遮罩直到 done
+						}
+					} catch {
+						/* ignore */
+					}
+				};
+				es.addEventListener("progress", handleSingleProgress);
+				es.onmessage = handleSingleProgress;
+
+				es.addEventListener("error", () => {
+					// 不主动关闭，交给 EventSource 自动重连
+					// console.warn("SSE error (single), waiting for reconnect");
+				});
+
+				es.addEventListener("done", () => {
+					es.close();
+					setTitleSuggesting(false);
+					resolve();
+				});
+			} catch (e) {
+				setTitleSuggesting(false);
+				reject(e);
+			}
+		});
 	};
 
 	// 新增：标题选择与编辑相关状态
@@ -313,25 +391,6 @@ const BilibiliPage = () => {
 
 	return (
 		<App>
-			{/* AI 标题生成加载遮罩 */}
-			{titleSuggesting && (
-				<div
-					style={{
-						position: "fixed",
-						top: 0,
-						left: 0,
-						width: "100%",
-						height: "100%",
-						background: "rgba(255,255,255,0.6)",
-						display: "flex",
-						alignItems: "center",
-						justifyContent: "center",
-						zIndex: 2000,
-					}}
-				>
-					<Spin tip="AI 正在生成标题..." size="large" />
-				</div>
-			)}
 			<div
 				style={{
 					maxWidth: "800px",
@@ -607,9 +666,10 @@ const BilibiliPage = () => {
 							onClick={async () => {
 								setUseOriginalTitle(false);
 								setKeepTitleModalVisible(false);
+								// 先打开编辑弹窗，再流式填充
+								setTitleEditModalVisible(true);
 								try {
 									await prepareTitleSuggestions();
-									setTitleEditModalVisible(true);
 								} catch (e) {
 									message.error("AI 标题建议失败，请稍后重试");
 									setSelectedPlaylist(null);

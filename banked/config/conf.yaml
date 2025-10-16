@@ -39,3 +39,4 @@ Ai:
   timeout: ${AI_TIMEOUT_SECONDS}
   max_title_length: ${AI_MAX_TITLE_LENGTH}
   cache_ttl: ${AI_CACHE_TTL}
+  concurrency: 2

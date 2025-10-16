@@ -12,7 +12,6 @@ import (
 )
 
 // Suggester 为“标题建议器”的接口：
-// 输入原始视频标题，返回更像歌曲名的简短建议与置信度，供业务层决策是否采纳。
 type Suggester interface {
 	Suggest(ctx context.Context, originalTitle string) (suggestion string, err error)
 }
@@ -22,8 +21,8 @@ type Provider interface {
 	CompleteText(ctx context.Context, prompt string) (string, error)
 }
 
-// Config 为服务配置项，包含模型名、超时、缓存 TTL、最小置信度与最大标题长度等。
-type Config struct {
+// ServerConfig 服务配置项
+type ServerConfig struct {
 	Model          string
 	Timeout        time.Duration
 	CacheTTL       time.Duration
@@ -33,7 +32,7 @@ type Config struct {
 // Service 实现 Suggester，提供：LLM 调用、超时控制、内存缓存。
 type Service struct {
 	provider Provider
-	cfg      Config
+	cfg      ServerConfig
 
 	mu    sync.Mutex
 	cache map[string]cachedItem
@@ -44,8 +43,8 @@ type cachedItem struct {
 	expireAt   time.Time
 }
 
-// NewService 创建 Service，并设置默认值（MinConfidence/MaxTitleLength）。
-func NewService(p Provider, cfg Config) *Service {
+// NewService 初始化 Service。
+func NewService(p Provider, cfg ServerConfig) *Service {
 	cfg.MaxTitleLength = 200
 
 	return &Service{
@@ -67,11 +66,10 @@ func (s *Service) Suggest(ctx context.Context, question string) (string, error) 
 	if orig == "" {
 		return "", errors.New("empty original title")
 	}
-	orig = ReplaceQuotes(orig)
 
 	if suggested, ok := s.getCache(orig); ok {
 		log.Logger.Info("AITitle cache hit",
-			log.String("original", truncateForLog(orig, 120)),
+			log.String("original", orig),
 		)
 		return suggested, nil
 	}
@@ -86,7 +84,7 @@ func (s *Service) Suggest(ctx context.Context, question string) (string, error) 
 		log.Logger.Warn("AITitle provider error",
 			log.String("model", s.cfg.Model),
 			log.Int("timeoutSeconds", int(s.cfg.Timeout/time.Second)),
-			log.String("promptPreview", truncateForLog(prompt, 200)),
+			log.String("promptPreview", prompt),
 			log.String("error", err.Error()),
 			log.Float32("elapsedMs", float32(time.Since(start).Milliseconds())),
 		)
@@ -98,15 +96,15 @@ func (s *Service) Suggest(ctx context.Context, question string) (string, error) 
 
 	if suggested == "" {
 		log.Logger.Warn("AITitle low confidence or empty suggestion",
-			log.String("original", truncateForLog(orig, 120)),
-			log.String("suggested", truncateForLog(suggested, 120)),
+			log.String("original", orig),
+			log.String("suggested", suggested),
 		)
 		return "", errors.New("empty suggestion from AI model")
 	}
 	s.setCache(orig, suggested)
 	log.Logger.Info("AITitle success",
-		log.String("original", truncateForLog(orig, 120)),
-		log.String("suggested", truncateForLog(suggested, 120)),
+		log.String("original", orig),
+		log.String("suggested", suggested),
 		log.Float32("elapsedMs", float32(time.Since(start).Milliseconds())),
 	)
 	return suggested, nil
@@ -114,8 +112,10 @@ func (s *Service) Suggest(ctx context.Context, question string) (string, error) 
 
 // buildPrompt：提问模板
 func (s *Service) buildPrompt(question string) string {
-	return fmt.Sprintf(`
-下面给了一首歌曲的视频的标题和简介，根据这些内容，提取里面的歌名，只用你提取的结果，其他什么都不要
+	return fmt.Sprintf(`下面给了一首歌曲视频的标题和简介，根据这些内容，分析这个视频的歌名是什么
+有以下限制：
+1.返回它的歌名，并且只用返回最最最主要的一首
+2.只用你提取的结果，其他什么都不要
 现在的输入：%s`, question)
 }
 
@@ -141,21 +141,4 @@ func (s *Service) setCache(key, suggestion string) {
 		expireAt:   time.Now().Add(s.cfg.CacheTTL),
 	}
 	s.mu.Unlock()
-}
-
-// normalizeQuotes 将双引号替换为单引号
-func ReplaceQuotes(s string) string {
-	s = strings.ReplaceAll(s, "\"", "'")
-	s = strings.ReplaceAll(s, "“", "'")
-	s = strings.ReplaceAll(s, "”", "'")
-	return s
-}
-
-// truncateForLog 截断长文本，避免日志爆量
-func truncateForLog(s string, max int) string {
-	r := []rune(s)
-	if len(r) <= max {
-		return s
-	}
-	return string(r[:max]) + "..."
 }

@@ -75,8 +75,12 @@ func UploadToNetCloud(filename string, splaylist bool, pid int64, cookiefile str
 	}
 	resp, err := api.CloudUploadCheck(ctx, &checkReq)
 	if err != nil {
-		log.Logger.Error("fail to get token", log.Any("err : ", err), log.Any("Code : ", resp.Code))
+		log.Logger.Error("fail to get token", log.Any("err : ", err))
 		return errors.New("fail to get token")
+	}
+	if resp == nil {
+		log.Logger.Error("token response is nil")
+		return errors.New("token Code is not compare")
 	}
 	if resp.Code != 200 {
 		log.Logger.Error("token Code is not 200", log.Any("Code : ", resp.Code))
@@ -95,11 +99,15 @@ func UploadToNetCloud(filename string, splaylist bool, pid int64, cookiefile str
 	}
 	allocResp, err := api.CloudTokenAlloc(ctx, &allocReq)
 	if err != nil {
-		log.Logger.Error("fail to get token", log.Any("err : ", err), log.Any("Code : ", resp.Code))
+		log.Logger.Error("fail to get token", log.Any("err : ", err))
 		return errors.New("fail to get token")
 	}
+	if allocResp == nil {
+		log.Logger.Error("alloc token response is nil")
+		return errors.New("token Code is not compare")
+	}
 	if allocResp.Code != 200 {
-		log.Logger.Error("token Code is not 200", log.Any("Code : ", resp.Code))
+		log.Logger.Error("token Code is not 200", log.Any("Code : ", allocResp.Code))
 		return errors.New("token Code is not compare")
 	}
 
@@ -113,8 +121,12 @@ func UploadToNetCloud(filename string, splaylist bool, pid int64, cookiefile str
 		}
 		uploadResp, err := api.CloudUpload(ctx, &uploadReq)
 		if err != nil {
-			log.Logger.Error("fail to upload", log.Any("err : ", err), log.Any("Code : ", uploadResp.ErrCode))
+			log.Logger.Error("fail to upload", log.Any("err : ", err))
 			return errors.New("fail to upload")
+		}
+		if uploadResp == nil {
+			log.Logger.Error("upload response is nil")
+			return errors.New("upload Code is not compare")
 		}
 		if uploadResp.ErrCode != "" {
 			log.Logger.Error("fail to upload", log.Any("Code : ", uploadResp.ErrCode))

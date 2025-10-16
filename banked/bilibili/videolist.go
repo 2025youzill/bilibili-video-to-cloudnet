@@ -96,6 +96,5 @@ func GetVideoList(ctx *gin.Context) {
 	resp.Author = videoinfo.Owner.Name
 	resp.VideoList = videolist
 
-	log.Logger.Info("get video list success", log.Any("resp : ", resp))
 	ctx.JSON(http.StatusOK, response.SuccessMsg(resp))
 }
