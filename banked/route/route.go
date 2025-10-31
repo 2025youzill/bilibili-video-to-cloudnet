@@ -54,36 +54,40 @@ func NewRouter() *gin.Engine {
 	// 健康检查放在根路径
 	server.GET("/health", HealthCheck)
 
-	group := server.Group("/api")
-	{
-		// 公开接口（不需要认证）
-		group.POST("/netcloud/login", cloudnet.SendByPhone)          // 发送验证码
-		group.POST("/netcloud/login/verify", cloudnet.VerifyCaptcha) // 验证验证码
+	// 统一使用 /bvtc/api 路径前缀
+	bvtcGroup := server.Group("/bvtc/api")
+	registerRoutes(bvtcGroup)
 
-		// 测试接口
-		group.GET("/test/bilibili/download", bilibili.DownloadVideo)
-		group.GET("/test/bilibili/desc", bilibili.GetVideoDesc)
-		// 需要认证的接口
-		authGroup := group.Group("/")
-		authGroup.Use(middleware.SessionAuthMiddleware())
-
-		{
-			authGroup.GET("/netcloud/login/check", cloudnet.CheckCookie)  // 检查登陆状态
-			authGroup.POST("/netcloud/logout", cloudnet.DeleteCookie)     // 退出登录,删除状态（改为POST防CSRF）
-			authGroup.GET("/netcloud/playlist", cloudnet.ShowPlaylist)    //获取歌单
-			authGroup.GET("/netcloud/useravatar", cloudnet.GetUserAvatar) //获取用户头像
-
-			authGroup.POST("/bilibili/createtask", bilibili.CreateLoadMP4Task)                     // 创建任务
-			authGroup.GET("/bilibili/checktask/:taskId", bilibili.CheckLoadMP4Task)                // 查询任务状态
-			authGroup.GET("/bilibili/list", bilibili.GetVideoList)                                 // 视频列表
-			authGroup.GET("/bilibili/suggest-title-batch/stream", routeai.SuggestTitleBatchStream) // 生成标题（SSE流式）
-			// 暂时不用下面接口
-			authGroup.GET("/bilibili/login", bilibili.BiliLogin)
-			authGroup.GET("/bilibili/login/check", bilibili.BiliLoginWithCookie)
-
-		}
-	}
 	return server
+}
+
+// registerRoutes 注册所有API路由
+func registerRoutes(group *gin.RouterGroup) {
+	// 公开接口（不需要认证）
+	group.POST("/netcloud/login", cloudnet.SendByPhone)          // 发送验证码
+	group.POST("/netcloud/login/verify", cloudnet.VerifyCaptcha) // 验证验证码
+
+	// 测试接口
+	group.GET("/test/bilibili/download", bilibili.DownloadVideo)
+	group.GET("/test/bilibili/desc", bilibili.GetVideoDesc)
+
+	// 需要认证的接口
+	authGroup := group.Group("/")
+	authGroup.Use(middleware.SessionAuthMiddleware())
+	{
+		authGroup.GET("/netcloud/login/check", cloudnet.CheckCookie)  // 检查登陆状态
+		authGroup.POST("/netcloud/logout", cloudnet.DeleteCookie)     // 退出登录,删除状态（改为POST防CSRF）
+		authGroup.GET("/netcloud/playlist", cloudnet.ShowPlaylist)    //获取歌单
+		authGroup.GET("/netcloud/useravatar", cloudnet.GetUserAvatar) //获取用户头像
+
+		authGroup.POST("/bilibili/createtask", bilibili.CreateLoadMP4Task)                     // 创建任务
+		authGroup.GET("/bilibili/checktask/:taskId", bilibili.CheckLoadMP4Task)                // 查询任务状态
+		authGroup.GET("/bilibili/list", bilibili.GetVideoList)                                 // 视频列表
+		authGroup.GET("/bilibili/suggest-title-batch/stream", routeai.SuggestTitleBatchStream) // 生成标题（SSE流式）
+		// 暂时不用下面接口
+		authGroup.GET("/bilibili/login", bilibili.BiliLogin)
+		authGroup.GET("/bilibili/login/check", bilibili.BiliLoginWithCookie)
+	}
 }
 
 func Cors() gin.HandlerFunc {

@@ -8,9 +8,8 @@ module.exports = function (app) {
 			changeOrigin: true,
 			secure: false,
 			logLevel: "debug",
-			pathRewrite: {
-				"^/api": "/api", // 保持 /api 前缀
-			},
+			// 不需要 pathRewrite，直接转发到后端的 /bvtc/api 路径
+			// 后端现在直接支持 /bvtc/api 前缀
 			// 关键：避免代理侧超时断开 SSE
 			timeout: 0,
 			proxyTimeout: 0,

@@ -29,6 +29,7 @@ const BilibiliPage = () => {
 	const [isHovering, setIsHovering] = useState(false);
 	const [confirmModalVisible, setConfirmModalVisible] = useState(false);
 	const [selectedPlaylist, setSelectedPlaylist] = useState(null);
+	const [searchKeyword, setSearchKeyword] = useState("");
 	// 根据 bvid 获取原标题的工具函数
 	const getOriginalTitleByBvid = (bvid) => {
 		if (!videoInfo?.video_list) return "";
@@ -260,11 +261,38 @@ const BilibiliPage = () => {
 		setCurrentPage(page);
 	};
 
-	// 计算当前页的视频列表
+	// 计算当前页的视频列表（带搜索过滤）
 	const getCurrentPageVideos = () => {
 		if (!videoInfo?.video_list) return [];
+		// 先过滤掉第一个视频（当前视频）
+		let videos = videoInfo.video_list.slice(1);
+
+		// 如果有搜索关键词，进行过滤
+		if (searchKeyword.trim()) {
+			const keyword = searchKeyword.trim().toLowerCase();
+			videos = videos.filter(
+				(video) => video.title.toLowerCase().includes(keyword) || video.bvid.toLowerCase().includes(keyword)
+			);
+		}
+
+		// 分页
 		const startIndex = (currentPage - 1) * pageSize;
-		return videoInfo.video_list.slice(1).slice(startIndex, startIndex + pageSize);
+		return videos.slice(startIndex, startIndex + pageSize);
+	};
+
+	// 获取过滤后的总数
+	const getFilteredTotal = () => {
+		if (!videoInfo?.video_list) return 0;
+		let videos = videoInfo.video_list.slice(1);
+
+		if (searchKeyword.trim()) {
+			const keyword = searchKeyword.trim().toLowerCase();
+			videos = videos.filter(
+				(video) => video.title.toLowerCase().includes(keyword) || video.bvid.toLowerCase().includes(keyword)
+			);
+		}
+
+		return videos.length;
 	};
 
 	const handleUpload = async (playlist) => {
@@ -557,6 +585,27 @@ const BilibiliPage = () => {
 						{videoInfo.video_list && videoInfo.video_list.length > 1 && (
 							<>
 								<h2>合集列表：{videoInfo.list_title?.replace("合集·", "")}</h2>
+
+								{/* 搜索框 */}
+								<div style={{ marginBottom: "16px" }}>
+									<Input.Search
+										placeholder="搜索视频标题或BV号..."
+										value={searchKeyword}
+										onChange={(e) => {
+											setSearchKeyword(e.target.value);
+											setCurrentPage(1); // 搜索时重置到第一页
+										}}
+										onSearch={() => {}} // 实时搜索，不需要点击按钮
+										allowClear
+										style={{ width: "100%" }}
+									/>
+									{searchKeyword.trim() && (
+										<div style={{ marginTop: "8px", color: "#666", fontSize: "14px" }}>
+											找到 {getFilteredTotal()} 个结果
+										</div>
+									)}
+								</div>
+
 								<div style={{ marginBottom: "10px" }}>
 									<Checkbox
 										onChange={(e) => handleSelectAll(e.target.checked)}
@@ -596,7 +645,7 @@ const BilibiliPage = () => {
 									<Pagination
 										current={currentPage}
 										pageSize={pageSize}
-										total={videoInfo.video_list.length - 1}
+										total={getFilteredTotal()}
 										onChange={handlePageChange}
 										showSizeChanger={false}
 									/>
