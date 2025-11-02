@@ -5,7 +5,7 @@ banked/user
 banked/log/logs
 test
 .env
-banked/user
 redis.conf
 fronted/nginx.conf
+fronted/public/picture
 docker-compose.yml

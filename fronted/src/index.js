@@ -5,6 +5,7 @@ import App from "./App";
 import "antd/dist/reset.css";
 import "./styles/variables.css";
 import "./styles/main.css";
+import "./styles/background.css";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(

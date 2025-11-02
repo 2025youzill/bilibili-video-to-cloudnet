@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Input, Button, List, message, Modal, Checkbox, Space, Pagination, App, Progress, Spin } from "antd";
-import { UserOutlined } from "@ant-design/icons";
+import { UserOutlined, EyeOutlined, EyeInvisibleOutlined, GithubOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../axiosInstance";
 import { checkLoginStatus } from "../api/login";
@@ -30,6 +30,8 @@ const BilibiliPage = () => {
 	const [confirmModalVisible, setConfirmModalVisible] = useState(false);
 	const [selectedPlaylist, setSelectedPlaylist] = useState(null);
 	const [searchKeyword, setSearchKeyword] = useState("");
+	const [backgroundVisible, setBackgroundVisible] = useState(true);
+	const [topbarVisible, setTopbarVisible] = useState(false);
 	// 根据 bvid 获取原标题的工具函数
 	const getOriginalTitleByBvid = (bvid) => {
 		if (!videoInfo?.video_list) return "";
@@ -402,8 +404,22 @@ const BilibiliPage = () => {
 		};
 		ensureLogin();
 
+		// 监听鼠标移动，控制顶部导航栏的显示/隐藏
+		const handleMouseMove = (e) => {
+			if (e.clientY <= 50) {
+				// 鼠标在顶部50px内，显示导航栏
+				setTopbarVisible(true);
+			} else if (e.clientY > 100) {
+				// 鼠标离开顶部100px以上，隐藏导航栏
+				setTopbarVisible(false);
+			}
+		};
+
+		window.addEventListener("mousemove", handleMouseMove);
+
 		return () => {
 			if (progressTimer) clearInterval(progressTimer);
+			window.removeEventListener("mousemove", handleMouseMove);
 		};
 	}, [navigate]); // 移除progressTimer依赖，避免重复调用
 
@@ -419,499 +435,593 @@ const BilibiliPage = () => {
 
 	return (
 		<App>
+			{/* 背景遮罩层 - 当隐藏背景时显示 */}
+			{!backgroundVisible && (
+				<div
+					style={{
+						position: "fixed",
+						top: 0,
+						left: 0,
+						width: "100vw",
+						height: "100vh",
+						background: "#ffffff",
+						zIndex: -2,
+					}}
+				/>
+			)}
+
+			{/* 顶部导航栏 - 自动隐藏 */}
 			<div
 				style={{
-					maxWidth: "800px",
-					margin: "0 auto",
-					padding: "20px",
-					backgroundColor: "#fff",
-					borderRadius: "8px",
-					boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+					position: "fixed",
+					top: 0,
+					left: 0,
+					right: 0,
+					height: "50px",
+					background: "rgba(255, 255, 255, 0.1)",
+					backdropFilter: "blur(10px)",
+					WebkitBackdropFilter: "blur(10px)",
+					borderBottom: "1px solid rgba(255, 255, 255, 0.2)",
+					display: "flex",
+					alignItems: "center",
+					justifyContent: "flex-end",
+					padding: "0 30px",
+					gap: "20px",
+					zIndex: 1000,
+					transform: topbarVisible ? "translateY(0)" : "translateY(-100%)",
+					transition: "transform 0.3s ease-in-out",
 				}}
 			>
-				<div
+				{/* 背景切换按钮 */}
+				<Button
+					type="text"
+					icon={backgroundVisible ? <EyeOutlined /> : <EyeInvisibleOutlined />}
+					onClick={() => setBackgroundVisible(!backgroundVisible)}
+					style={{
+						color: "#333",
+						fontWeight: "600",
+						display: "flex",
+						alignItems: "center",
+						gap: "6px",
+					}}
+				>
+					{backgroundVisible ? "隐藏背景" : "显示背景"}
+				</Button>
+
+				{/* GitHub 图标 */}
+				<a
+					href="https://github.com/2025youzill/bilibili-video-to-cloudnet"
+					target="_blank"
+					rel="noopener noreferrer"
 					style={{
 						display: "flex",
 						alignItems: "center",
-						justifyContent: "center",
-						marginBottom: 16,
-						position: "relative",
+						color: "#333",
+						fontSize: "24px",
+						transition: "all 0.3s ease",
+					}}
+					onMouseEnter={(e) => {
+						e.currentTarget.style.color = "#000";
+						e.currentTarget.style.transform = "scale(1.1)";
+					}}
+					onMouseLeave={(e) => {
+						e.currentTarget.style.color = "#333";
+						e.currentTarget.style.transform = "scale(1)";
 					}}
 				>
-					<h1 style={{ margin: 0 }}>BVTC</h1>
-					<div style={{ position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)" }}>
-						<div
-							style={{
-								width: 48,
-								height: 48,
-								borderRadius: "50%",
-								overflow: "hidden",
-								cursor: "pointer",
-								boxShadow: "0 2px 6px rgba(0,0,0,0.12)",
-								transition: "all 0.3s ease",
-								display: "flex",
-								alignItems: "center",
-								justifyContent: "center",
-								background: "#fafafa",
-								position: "relative",
-							}}
-							onMouseEnter={() => setIsHovering(true)}
-							onMouseLeave={() => setIsHovering(false)}
-							onClick={handleLogout}
-						>
-							{/* 头像图片 */}
-							{avatarUrl ? (
-								<>
-									{/* console.log("渲染头像，URL:", avatarUrl) */}
-									<img
-										src={avatarUrl}
-										alt="avatar"
-										style={{
-											width: "100%",
-											height: "100%",
-											objectFit: "cover",
-											transition: "all 0.3s ease",
-											opacity: isHovering ? 0 : 1,
-											transform: isHovering ? "scale(0.8)" : "scale(1)",
-										}}
-										onLoad={() => {
-											/* console.log("头像加载成功") */
-										}}
-										onError={(e) => {
-											/* console.error("头像加载失败:", e) */
-										}}
-									/>
-								</>
-							) : (
-								<>
-									{/* console.log("头像URL为空，显示默认图标") */}
-									<UserOutlined
-										style={{
-											transition: "all 0.3s ease",
-											opacity: isHovering ? 0 : 1,
-											transform: isHovering ? "scale(0.8)" : "scale(1)",
-											fontSize: "24px",
-											color: "#666",
-										}}
-									/>
-								</>
-							)}
-						</div>
+					<GithubOutlined />
+				</a>
+			</div>
 
-						{/* 退出登录文字 - 条形样式，不受圆形限制 */}
-						<div
-							style={{
-								position: "absolute",
-								top: "50%",
-								left: "50%",
-								transform: "translate(-50%, -50%)",
-								padding: "8px 16px",
-								background: "#87ceeb",
-								color: "white",
-								borderRadius: "20px",
-								fontSize: "12px",
-								fontWeight: "bold",
-								transition: "all 0.3s ease",
-								opacity: isHovering ? 1 : 0,
-								transform: isHovering ? "translate(-50%, -50%) scale(1)" : "translate(-50%, -50%) scale(0.8)",
-								whiteSpace: "nowrap",
-								userSelect: "none",
-								zIndex: 10,
-								minWidth: "70px",
-								textAlign: "center",
-								boxShadow: "0 2px 8px rgba(135, 206, 235, 0.4)",
-								pointerEvents: "none",
-							}}
-						>
-							退出登录
-						</div>
-					</div>
-				</div>
-				<div
-					style={{
-						display: "flex",
-						gap: "10px",
-						marginBottom: "20px",
-						justifyContent: "center",
-					}}
-				>
-					<Input
-						placeholder="请输入B站视频ID (bvid)"
-						value={videoId}
-						onChange={(e) => setVideoId(e.target.value)}
-						style={{ width: "300px", marginRight: "10px" }}
-					/>
-					<Button type="primary" onClick={handleSearch} loading={loading}>
-						搜索
-					</Button>
-				</div>
+			<div className="main-container-wrapper">
+				<div className="main-glass-container">
+					<div
+						className="glass-card"
+						style={{
+							padding: "40px 60px",
+							display: "flex",
+							flexDirection: "column",
+							justifyContent: "flex-start",
+							paddingTop: "60px",
+						}}
+					>
+						{/* 容器：控制整体宽度和对齐 */}
+						<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+							{/* 标题和头像区 - 同一行 */}
+							<div
+								style={{
+									display: "flex",
+									alignItems: "center",
+									justifyContent: "center",
+									marginBottom: 20,
+									width: "100%",
+									maxWidth: "480px",
+									position: "relative",
+								}}
+							>
+								<h1 style={{ margin: 0, position: "absolute", left: "50%", transform: "translateX(-50%)" }}>BVTC</h1>
 
-				{videoInfo && (
-					<div>
-						<h2>作品信息</h2>
-						<p>UP主：{videoInfo.author}</p>
-						{videoInfo.video_list && videoInfo.video_list.length > 0 && (
-							<div style={{ marginBottom: "20px" }}>
-								<h3>当前视频</h3>
-								<List
-									dataSource={[videoInfo.video_list[0]]}
-									renderItem={(video) => (
-										<List.Item>
-											<List.Item.Meta
-												title={
-													<Space>
-														<Checkbox
-															checked={selectedVideos.includes(video.bvid)}
-															onChange={(e) => handleVideoSelect(video.bvid, e.target.checked)}
-														/>
-														<span>{video.title}</span>
-													</Space>
-												}
-												description={
-													<Space>
-														<span>BV号：</span>
-														<a href={video.url} target="_blank" rel="noopener noreferrer">
-															{video.bvid}
-														</a>
-													</Space>
-												}
-											/>
-										</List.Item>
-									)}
+								{/* 用户头像 - 在搜索按钮的正上方 */}
+								<div style={{ position: "relative", marginLeft: "auto" }}>
+									<div
+										style={{
+											width: 48,
+											height: 48,
+											borderRadius: "50%",
+											overflow: "hidden",
+											cursor: "pointer",
+											boxShadow: "0 2px 6px rgba(0,0,0,0.12)",
+											transition: "all 0.3s ease",
+											display: "flex",
+											alignItems: "center",
+											justifyContent: "center",
+											background: "#fafafa",
+											position: "relative",
+										}}
+										onMouseEnter={() => setIsHovering(true)}
+										onMouseLeave={() => setIsHovering(false)}
+										onClick={handleLogout}
+									>
+										{/* 头像图片 */}
+										{avatarUrl ? (
+											<>
+												{/* console.log("渲染头像，URL:", avatarUrl) */}
+												<img
+													src={avatarUrl}
+													alt="avatar"
+													style={{
+														width: "100%",
+														height: "100%",
+														objectFit: "cover",
+														transition: "all 0.3s ease",
+														opacity: isHovering ? 0 : 1,
+														transform: isHovering ? "scale(0.8)" : "scale(1)",
+													}}
+													onLoad={() => {
+														/* console.log("头像加载成功") */
+													}}
+													onError={(e) => {
+														/* console.error("头像加载失败:", e) */
+													}}
+												/>
+											</>
+										) : (
+											<>
+												{/* console.log("头像URL为空，显示默认图标") */}
+												<UserOutlined
+													style={{
+														transition: "all 0.3s ease",
+														opacity: isHovering ? 0 : 1,
+														transform: isHovering ? "scale(0.8)" : "scale(1)",
+														fontSize: "24px",
+														color: "#666",
+													}}
+												/>
+											</>
+										)}
+									</div>
+
+									{/* 退出登录文字 - 条形样式，不受圆形限制 */}
+									<div
+										style={{
+											position: "absolute",
+											top: "50%",
+											left: "50%",
+											transform: "translate(-50%, -50%)",
+											padding: "8px 16px",
+											background: "#87ceeb",
+											color: "white",
+											borderRadius: "20px",
+											fontSize: "12px",
+											fontWeight: "bold",
+											transition: "all 0.3s ease",
+											opacity: isHovering ? 1 : 0,
+											transform: isHovering ? "translate(-50%, -50%) scale(1)" : "translate(-50%, -50%) scale(0.8)",
+											whiteSpace: "nowrap",
+											userSelect: "none",
+											zIndex: 10,
+											minWidth: "70px",
+											textAlign: "center",
+											boxShadow: "0 2px 8px rgba(135, 206, 235, 0.4)",
+											pointerEvents: "none",
+										}}
+									>
+										退出登录
+									</div>
+								</div>
+							</div>
+
+							{/* 搜索栏区 */}
+							<div
+								style={{
+									display: "flex",
+									gap: "10px",
+									marginBottom: "20px",
+									justifyContent: "center",
+								}}
+							>
+								<Input
+									placeholder="请输入B站视频ID (bvid)"
+									value={videoId}
+									onChange={(e) => setVideoId(e.target.value)}
+									style={{ width: "300px" }}
 								/>
+								<Button type="primary" onClick={handleSearch} loading={loading}>
+									搜索
+								</Button>
+							</div>
+						</div>
+
+						{videoInfo && (
+							<div>
+								<h2 style={{ color: "#000000" }}>作品信息</h2>
+								<p style={{ color: "#000000", fontWeight: "600" }}>UP主：{videoInfo.author}</p>
+								{videoInfo.video_list && videoInfo.video_list.length > 0 && (
+									<div style={{ marginBottom: "20px" }}>
+										<h3 style={{ color: "#000000" }}>当前视频</h3>
+										<List
+											dataSource={[videoInfo.video_list[0]]}
+											renderItem={(video) => (
+												<List.Item>
+													<List.Item.Meta
+														title={
+															<Space>
+																<Checkbox
+																	checked={selectedVideos.includes(video.bvid)}
+																	onChange={(e) => handleVideoSelect(video.bvid, e.target.checked)}
+																/>
+																<span style={{ color: "#000000", fontWeight: "500" }}>{video.title}</span>
+															</Space>
+														}
+														description={
+															<Space>
+																<span style={{ color: "#000000" }}>BV号：</span>
+																<a href={video.url} target="_blank" rel="noopener noreferrer">
+																	{video.bvid}
+																</a>
+															</Space>
+														}
+													/>
+												</List.Item>
+											)}
+										/>
+									</div>
+								)}
+
+								{videoInfo.video_list && videoInfo.video_list.length > 1 && (
+									<>
+										<h2 style={{ color: "#000000" }}>合集列表：{videoInfo.list_title?.replace("合集·", "")}</h2>
+
+										{/* 搜索框 */}
+										<div style={{ marginBottom: "16px" }}>
+											<Input.Search
+												placeholder="搜索视频标题或BV号..."
+												value={searchKeyword}
+												onChange={(e) => {
+													setSearchKeyword(e.target.value);
+													setCurrentPage(1); // 搜索时重置到第一页
+												}}
+												onSearch={() => {}} // 实时搜索，不需要点击按钮
+												allowClear
+												style={{ width: "320px" }}
+											/>
+											{searchKeyword.trim() && (
+												<div style={{ marginTop: "8px", color: "#000000", fontSize: "14px" }}>
+													找到 {getFilteredTotal()} 个结果
+												</div>
+											)}
+										</div>
+
+										<div style={{ marginBottom: "10px" }}>
+											<Checkbox
+												onChange={(e) => handleSelectAll(e.target.checked)}
+												checked={selectedVideos.length === videoInfo.video_list.length}
+												indeterminate={selectedVideos.length > 0 && selectedVideos.length < videoInfo.video_list.length}
+											>
+												<span style={{ color: "#000000" }}>全选</span>
+											</Checkbox>
+										</div>
+										<List
+											dataSource={getCurrentPageVideos()}
+											renderItem={(video) => (
+												<List.Item>
+													<List.Item.Meta
+														title={
+															<Space>
+																<Checkbox
+																	checked={selectedVideos.includes(video.bvid)}
+																	onChange={(e) => handleVideoSelect(video.bvid, e.target.checked)}
+																/>
+																<span style={{ color: "#000000", fontWeight: "500" }}>{video.title}</span>
+															</Space>
+														}
+														description={
+															<Space>
+																<span style={{ color: "#000000" }}>BV号：</span>
+																<a href={video.url} target="_blank" rel="noopener noreferrer">
+																	{video.bvid}
+																</a>
+															</Space>
+														}
+													/>
+												</List.Item>
+											)}
+										/>
+										<div style={{ marginTop: "16px", textAlign: "right" }}>
+											<Pagination
+												current={currentPage}
+												pageSize={pageSize}
+												total={getFilteredTotal()}
+												onChange={handlePageChange}
+												showSizeChanger={false}
+											/>
+										</div>
+									</>
+								)}
+
+								<Button
+									type="primary"
+									onClick={handleSave}
+									style={{ marginTop: "20px" }}
+									disabled={selectedVideos.length === 0 || uploading || progressModalVisible}
+									loading={uploading || progressModalVisible}
+								>
+									{uploading || progressModalVisible
+										? "上传中..."
+										: `保存到网易云歌单 (${selectedVideos.length}个视频)`}
+								</Button>
 							</div>
 						)}
 
-						{videoInfo.video_list && videoInfo.video_list.length > 1 && (
-							<>
-								<h2>合集列表：{videoInfo.list_title?.replace("合集·", "")}</h2>
+						<Modal title="选择歌单" open={isModalVisible} onCancel={() => setIsModalVisible(false)} footer={null}>
+							<List
+								dataSource={[{ pname: "不加入歌单，仅添加到云盘" }, ...playlists]}
+								style={{ maxHeight: "400px", overflowY: "auto" }}
+								renderItem={(playlist) => (
+									<List.Item>
+										<List.Item.Meta title={playlist.pname} />
+										<Button
+											onClick={() => {
+												// console.log("选择歌单:", playlist);
+												setIsModalVisible(false);
+												setSelectedPlaylist(playlist);
+												// 先询问是否保留原标题
+												setKeepTitleModalVisible(true);
+											}}
+										>
+											选择
+										</Button>
+									</List.Item>
+								)}
+							/>
+						</Modal>
 
-								{/* 搜索框 */}
-								<div style={{ marginBottom: "16px" }}>
-									<Input.Search
-										placeholder="搜索视频标题或BV号..."
-										value={searchKeyword}
-										onChange={(e) => {
-											setSearchKeyword(e.target.value);
-											setCurrentPage(1); // 搜索时重置到第一页
-										}}
-										onSearch={() => {}} // 实时搜索，不需要点击按钮
-										allowClear
-										style={{ width: "100%" }}
-									/>
-									{searchKeyword.trim() && (
-										<div style={{ marginTop: "8px", color: "#666", fontSize: "14px" }}>
-											找到 {getFilteredTotal()} 个结果
-										</div>
-									)}
-								</div>
-
-								<div style={{ marginBottom: "10px" }}>
-									<Checkbox
-										onChange={(e) => handleSelectAll(e.target.checked)}
-										checked={selectedVideos.length === videoInfo.video_list.length}
-										indeterminate={selectedVideos.length > 0 && selectedVideos.length < videoInfo.video_list.length}
-									>
-										全选
-									</Checkbox>
-								</div>
-								<List
-									dataSource={getCurrentPageVideos()}
-									renderItem={(video) => (
-										<List.Item>
-											<List.Item.Meta
-												title={
-													<Space>
-														<Checkbox
-															checked={selectedVideos.includes(video.bvid)}
-															onChange={(e) => handleVideoSelect(video.bvid, e.target.checked)}
-														/>
-														<span>{video.title}</span>
-													</Space>
-												}
-												description={
-													<Space>
-														<span>BV号：</span>
-														<a href={video.url} target="_blank" rel="noopener noreferrer">
-															{video.bvid}
-														</a>
-													</Space>
-												}
-											/>
-										</List.Item>
-									)}
-								/>
-								<div style={{ marginTop: "16px", textAlign: "right" }}>
-									<Pagination
-										current={currentPage}
-										pageSize={pageSize}
-										total={getFilteredTotal()}
-										onChange={handlePageChange}
-										showSizeChanger={false}
-									/>
-								</div>
-							</>
-						)}
-
-						<Button
-							type="primary"
-							onClick={handleSave}
-							style={{ marginTop: "20px" }}
-							disabled={selectedVideos.length === 0 || uploading || progressModalVisible}
-							loading={uploading || progressModalVisible}
-						>
-							{uploading || progressModalVisible ? "上传中..." : `保存到网易云歌单 (${selectedVideos.length}个视频)`}
-						</Button>
-					</div>
-				)}
-
-				<Modal title="选择歌单" open={isModalVisible} onCancel={() => setIsModalVisible(false)} footer={null}>
-					<List
-						dataSource={[{ pname: "不加入歌单，仅添加到云盘" }, ...playlists]}
-						style={{ maxHeight: "400px", overflowY: "auto" }}
-						renderItem={(playlist) => (
-							<List.Item>
-								<List.Item.Meta title={playlist.pname} />
+						{/* 是否保留原标题弹框 */}
+						<Modal
+							title="是否保留原视频名称？"
+							open={keepTitleModalVisible}
+							onCancel={() => {
+								setKeepTitleModalVisible(false);
+								setSelectedPlaylist(null);
+								setIsModalVisible(true);
+							}}
+							footer={[
 								<Button
+									key="yes"
 									onClick={() => {
-										// console.log("选择歌单:", playlist);
-										setIsModalVisible(false);
-										setSelectedPlaylist(playlist);
-										// 先询问是否保留原标题
+										setUseOriginalTitle(true);
+										setKeepTitleModalVisible(false);
+										setConfirmModalVisible(true);
+									}}
+								>
+									是，保留原标题
+								</Button>,
+								<Button
+									key="no"
+									type="primary"
+									loading={titleSuggesting}
+									onClick={async () => {
+										setUseOriginalTitle(false);
+										setKeepTitleModalVisible(false);
+										// 先打开编辑弹窗，再流式填充
+										setTitleEditModalVisible(true);
+										try {
+											await prepareTitleSuggestions();
+										} catch (e) {
+											message.error("AI 标题建议失败，请稍后重试");
+											setSelectedPlaylist(null);
+										}
+									}}
+								>
+									否，我要自定义
+								</Button>,
+							]}
+							centered
+							width={480}
+						>
+							<div style={{ textAlign: "center", padding: "10px 0" }}>
+								<p style={{ fontSize: "14px", color: "#666", margin: 0 }}>可先给出 AI 建议名，再自行修改</p>
+							</div>
+						</Modal>
+
+						{/* 标题编辑弹框 */}
+						<Modal
+							title="编辑上传标题（可基于 AI 建议）"
+							open={titleEditModalVisible}
+							onCancel={() => {
+								setTitleEditModalVisible(false);
+								setSelectedPlaylist(null);
+								setIsModalVisible(true);
+							}}
+							footer={[
+								<Button
+									key="back"
+									onClick={() => {
+										setTitleEditModalVisible(false);
 										setKeepTitleModalVisible(true);
 									}}
 								>
-									选择
-								</Button>
-							</List.Item>
-						)}
-					/>
-				</Modal>
+									上一步
+								</Button>,
+								<Button
+									key="confirm"
+									type="primary"
+									disabled={titleSuggesting}
+									onClick={() => {
+										setTitleEditModalVisible(false);
+										setConfirmModalVisible(true);
+									}}
+								>
+									确定
+								</Button>,
+							]}
+							centered
+							width={640}
+						>
+							<div style={{ maxHeight: 360, overflowY: "auto" }}>
+								{selectedVideos.map((bvid) => {
+									const original = getOriginalTitleByBvid(bvid);
+									return (
+										<div key={bvid} style={{ marginBottom: 12 }}>
+											<div style={{ fontSize: 12, color: "#999", marginBottom: 6 }}>BV号：{bvid}</div>
+											<div style={{ fontSize: 12, color: "#666", marginBottom: 6 }}>原标题：{original}</div>
+											<div style={{ display: "flex", gap: 8 }}>
+												<Input
+													placeholder="请输入歌曲名"
+													value={titleOverride[bvid] ?? ""}
+													onChange={(e) => setTitleOverride((prev) => ({ ...prev, [bvid]: e.target.value }))}
+													maxLength={60}
+												/>
+												<Button size="small" loading={titleSuggesting} onClick={() => regenerateSuggestion(bvid)}>
+													重新生成
+												</Button>
+											</div>
+										</div>
+									);
+								})}
+							</div>
+						</Modal>
+						<Modal
+							title="登录提示"
+							open={isLoginModalVisible}
+							onCancel={() => setIsLoginModalVisible(false)}
+							footer={[
+								<Button key="cancel" onClick={() => setIsLoginModalVisible(false)}>
+									取消
+								</Button>,
+								<Button
+									key="login"
+									type="primary"
+									onClick={() => {
+										setIsLoginModalVisible(false);
+										navigate("/login");
+									}}
+								>
+									去登录
+								</Button>,
+							]}
+						>
+							<p>请先登录网易云音乐账号</p>
+						</Modal>
 
-				{/* 是否保留原标题弹框 */}
-				<Modal
-					title="是否保留原视频名称？"
-					open={keepTitleModalVisible}
-					onCancel={() => {
-						setKeepTitleModalVisible(false);
-						setSelectedPlaylist(null);
-						setIsModalVisible(true);
-					}}
-					footer={[
-						<Button
-							key="yes"
-							onClick={() => {
-								setUseOriginalTitle(true);
-								setKeepTitleModalVisible(false);
-								setConfirmModalVisible(true);
-							}}
-						>
-							是，保留原标题
-						</Button>,
-						<Button
-							key="no"
-							type="primary"
-							loading={titleSuggesting}
-							onClick={async () => {
-								setUseOriginalTitle(false);
-								setKeepTitleModalVisible(false);
-								// 先打开编辑弹窗，再流式填充
-								setTitleEditModalVisible(true);
-								try {
-									await prepareTitleSuggestions();
-								} catch (e) {
-									message.error("AI 标题建议失败，请稍后重试");
-									setSelectedPlaylist(null);
-								}
-							}}
-						>
-							否，我要自定义
-						</Button>,
-					]}
-					centered
-					width={480}
-				>
-					<div style={{ textAlign: "center", padding: "10px 0" }}>
-						<p style={{ fontSize: "14px", color: "#666", margin: 0 }}>可先给出 AI 建议名，再自行修改</p>
-					</div>
-				</Modal>
-
-				{/* 标题编辑弹框 */}
-				<Modal
-					title="编辑上传标题（可基于 AI 建议）"
-					open={titleEditModalVisible}
-					onCancel={() => {
-						setTitleEditModalVisible(false);
-						setSelectedPlaylist(null);
-						setIsModalVisible(true);
-					}}
-					footer={[
-						<Button
-							key="back"
-							onClick={() => {
-								setTitleEditModalVisible(false);
-								setKeepTitleModalVisible(true);
-							}}
-						>
-							上一步
-						</Button>,
-						<Button
-							key="confirm"
-							type="primary"
-							disabled={titleSuggesting}
-							onClick={() => {
-								setTitleEditModalVisible(false);
-								setConfirmModalVisible(true);
-							}}
-						>
-							确定
-						</Button>,
-					]}
-					centered
-					width={640}
-				>
-					<div style={{ maxHeight: 360, overflowY: "auto" }}>
-						{selectedVideos.map((bvid) => {
-							const original = getOriginalTitleByBvid(bvid);
-							return (
-								<div key={bvid} style={{ marginBottom: 12 }}>
-									<div style={{ fontSize: 12, color: "#999", marginBottom: 6 }}>BV号：{bvid}</div>
-									<div style={{ fontSize: 12, color: "#666", marginBottom: 6 }}>原标题：{original}</div>
-									<div style={{ display: "flex", gap: 8 }}>
-										<Input
-											placeholder="请输入歌曲名"
-											value={titleOverride[bvid] ?? ""}
-											onChange={(e) => setTitleOverride((prev) => ({ ...prev, [bvid]: e.target.value }))}
-											maxLength={60}
+						<Modal open={progressModalVisible} footer={null} closable={false} centered title="上传进度">
+							<div style={{ marginBottom: 16 }}>
+								{progressError ? (
+									<span style={{ color: "red" }}>{progressError}</span>
+								) : (
+									<>
+										<p>正在上传，请稍候...</p>
+										<Progress
+											percent={progress}
+											status={taskStatus === "failed" ? "exception" : taskStatus === "completed" ? "success" : "active"}
 										/>
-										<Button size="small" loading={titleSuggesting} onClick={() => regenerateSuggestion(bvid)}>
-											重新生成
-										</Button>
-									</div>
-								</div>
-							);
-						})}
-					</div>
-				</Modal>
-				<Modal
-					title="登录提示"
-					open={isLoginModalVisible}
-					onCancel={() => setIsLoginModalVisible(false)}
-					footer={[
-						<Button key="cancel" onClick={() => setIsLoginModalVisible(false)}>
-							取消
-						</Button>,
-						<Button
-							key="login"
-							type="primary"
-							onClick={() => {
-								setIsLoginModalVisible(false);
-								navigate("/login");
-							}}
+									</>
+								)}
+							</div>
+						</Modal>
+
+						<Modal
+							open={!!uploadResult}
+							onCancel={() => setUploadResult(null)}
+							footer={[
+								<Button key="close" type="primary" onClick={() => setUploadResult(null)}>
+									关闭
+								</Button>,
+							]}
+							title="上传结果"
 						>
-							去登录
-						</Button>,
-					]}
-				>
-					<p>请先登录网易云音乐账号</p>
-				</Modal>
-
-				<Modal open={progressModalVisible} footer={null} closable={false} centered title="上传进度">
-					<div style={{ marginBottom: 16 }}>
-						{progressError ? (
-							<span style={{ color: "red" }}>{progressError}</span>
-						) : (
-							<>
-								<p>正在上传，请稍候...</p>
-								<Progress
-									percent={progress}
-									status={taskStatus === "failed" ? "exception" : taskStatus === "completed" ? "success" : "active"}
-								/>
-							</>
-						)}
-					</div>
-				</Modal>
-
-				<Modal
-					open={!!uploadResult}
-					onCancel={() => setUploadResult(null)}
-					footer={[
-						<Button key="close" type="primary" onClick={() => setUploadResult(null)}>
-							关闭
-						</Button>,
-					]}
-					title="上传结果"
-				>
-					{uploadResult && (
-						<>
-							{uploadResult.success.length > 0 && (
-								<div style={{ marginBottom: 12 }}>
-									<b style={{ color: "green" }}>上传成功：</b>
-									<ul>
-										{uploadResult.success.map((title, idx) => (
-											<li key={idx}>{title}</li>
-										))}
-									</ul>
-								</div>
+							{uploadResult && (
+								<>
+									{uploadResult.success.length > 0 && (
+										<div style={{ marginBottom: 12 }}>
+											<b style={{ color: "green" }}>上传成功：</b>
+											<ul>
+												{uploadResult.success.map((title, idx) => (
+													<li key={idx}>{title}</li>
+												))}
+											</ul>
+										</div>
+									)}
+									{uploadResult.failed.length > 0 && (
+										<div>
+											<b style={{ color: "red" }}>上传失败：</b>
+											<ul>
+												{uploadResult.failed.map((item, idx) => (
+													<li key={idx}>
+														{item.title}：{item.error}
+													</li>
+												))}
+											</ul>
+										</div>
+									)}
+								</>
 							)}
-							{uploadResult.failed.length > 0 && (
-								<div>
-									<b style={{ color: "red" }}>上传失败：</b>
-									<ul>
-										{uploadResult.failed.map((item, idx) => (
-											<li key={idx}>
-												{item.title}：{item.error}
-											</li>
-										))}
-									</ul>
-								</div>
-							)}
-						</>
-					)}
-				</Modal>
+						</Modal>
 
-				{/* 上传确认弹框 */}
-				<Modal
-					title="确认上传"
-					open={confirmModalVisible}
-					onCancel={() => {
-						setConfirmModalVisible(false);
-						setSelectedPlaylist(null);
-						setIsModalVisible(true); // 重新打开歌单选择弹框
-					}}
-					footer={[
-						<Button
-							key="cancel"
-							onClick={() => {
+						{/* 上传确认弹框 */}
+						<Modal
+							title="确认上传"
+							open={confirmModalVisible}
+							onCancel={() => {
 								setConfirmModalVisible(false);
 								setSelectedPlaylist(null);
 								setIsModalVisible(true); // 重新打开歌单选择弹框
 							}}
+							footer={[
+								<Button
+									key="cancel"
+									onClick={() => {
+										setConfirmModalVisible(false);
+										setSelectedPlaylist(null);
+										setIsModalVisible(true); // 重新打开歌单选择弹框
+									}}
+								>
+									取消
+								</Button>,
+								<Button
+									key="confirm"
+									type="primary"
+									onClick={() => {
+										setConfirmModalVisible(false);
+										handleUpload(selectedPlaylist);
+										setSelectedPlaylist(null);
+									}}
+								>
+									确认上传
+								</Button>,
+							]}
+							centered
+							width={400}
 						>
-							取消
-						</Button>,
-						<Button
-							key="confirm"
-							type="primary"
-							onClick={() => {
-								setConfirmModalVisible(false);
-								handleUpload(selectedPlaylist);
-								setSelectedPlaylist(null);
-							}}
-						>
-							确认上传
-						</Button>,
-					]}
-					centered
-					width={400}
-				>
-					<div style={{ textAlign: "center", padding: "20px 0" }}>
-						<p style={{ fontSize: "16px", color: "#666", margin: 0 }}>
-							是否确认将选中的 {selectedVideos.length} 首歌曲上传到
-							<span style={{ color: "#1890ff", fontWeight: "bold" }}>{selectedPlaylist?.pname || "云盘"}</span>？
-						</p>
+							<div style={{ textAlign: "center", padding: "20px 0" }}>
+								<p style={{ fontSize: "16px", color: "#666", margin: 0 }}>
+									是否确认将选中的 {selectedVideos.length} 首歌曲上传到
+									<span style={{ color: "#1890ff", fontWeight: "bold" }}>{selectedPlaylist?.pname || "云盘"}</span>？
+								</p>
+							</div>
+						</Modal>
 					</div>
-				</Modal>
+				</div>
 			</div>
 		</App>
 	);

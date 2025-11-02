@@ -26,8 +26,10 @@ const LoginPage = () => {
 	}, [navigate]);
 
 	return (
-		<div className="login-container">
-			<LoginForm />
+		<div className="login-page-with-bg">
+			<div className="login-form-glass">
+				<LoginForm />
+			</div>
 		</div>
 	);
 };

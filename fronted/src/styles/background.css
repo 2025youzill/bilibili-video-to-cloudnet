@@ -1,0 +1,275 @@
+/* 背景图片样式 */
+.background-image {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100vw;
+	height: 100vh;
+	margin: 0;
+	padding: 0;
+	background-size: cover;
+	background-position: center center;
+	background-repeat: no-repeat;
+	z-index: -3;
+	opacity: 0.85;
+	/* 确保完全覆盖 */
+	overflow: hidden;
+}
+
+/* 隐藏状态 */
+.background-image-hidden {
+	display: none !important;
+	opacity: 0 !important;
+	visibility: hidden !important;
+}
+
+/* 新图层级更高，覆盖在旧图上方 */
+.background-image-next {
+	z-index: -2;
+}
+
+/* 淡出效果 - 1.5秒慢慢消失 */
+.background-image.fade-out {
+	opacity: 0 !important;
+	transform: scale(1);
+	transition: opacity 1.5s ease-out;
+}
+
+/* 从小到大出现 - 1.5秒 */
+.background-image.zoom-in {
+	animation: zoomIn 1.5s ease-out forwards;
+}
+
+/* 从小到大的缩放动画 */
+@keyframes zoomIn {
+	0% {
+		transform: scale(0.92);
+		opacity: 0;
+	}
+	100% {
+		transform: scale(1);
+		opacity: 0.85;
+	}
+}
+
+/* 半透明渐变遮罩层 - 浅浅的覆盖效果 */
+.background-overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100vw;
+	height: 100vh;
+	margin: 0;
+	padding: 0;
+	background: rgba(255, 255, 255, 0.08);
+	backdrop-filter: blur(1px);
+	-webkit-backdrop-filter: blur(1px);
+	z-index: -1;
+	animation: overlayFadeIn 2s ease-in-out;
+	overflow: hidden;
+}
+
+/* 遮罩层淡入动画 */
+@keyframes overlayFadeIn {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+/* 大窗口容器 - 全屏显示 */
+.main-container-wrapper {
+	min-height: 100vh;
+	width: 100vw;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	margin: 0;
+}
+
+.main-glass-container {
+	width: 100%;
+	height: 100vh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+/* 极简透明卡片 - 全屏不遮挡背景 */
+.glass-card {
+	width: 100%;
+	height: 100%;
+	background: transparent !important;
+	backdrop-filter: none;
+	-webkit-backdrop-filter: none;
+	border: none !important;
+	box-shadow: none !important;
+	position: relative;
+	overflow-y: auto;
+}
+
+/* 增强内容区文字可读性 */
+.glass-card h1,
+.glass-card h2,
+.glass-card h3 {
+	text-shadow: 0 1px 3px rgba(255, 255, 255, 0.9), 0 2px 6px rgba(255, 255, 255, 0.6);
+	color: #1d2129 !important;
+	font-weight: 700;
+}
+
+.glass-card p,
+.glass-card span,
+.glass-card .ant-list-item-meta-title {
+	text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+/* Modal 弹窗也使用透明设计 */
+.ant-modal-content {
+	background: rgba(255, 255, 255, 0.95) !important;
+	backdrop-filter: blur(10px);
+	-webkit-backdrop-filter: blur(10px);
+}
+
+/* 登录页面特殊样式 */
+.login-page-with-bg {
+	min-height: 100vh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 20px;
+	background: transparent !important;
+}
+
+.login-form-glass {
+	background: transparent !important;
+	border: none !important;
+	box-shadow: none !important;
+	padding: 40px;
+	min-width: 360px;
+	max-width: 460px;
+	animation: slideUp 0.6s ease-out;
+	position: relative;
+}
+
+/* 登录表单内的输入框 - 透明效果浅蓝边框 */
+.login-form-glass .ant-input,
+.login-form-glass .ant-input-affix-wrapper {
+	background: rgba(255, 255, 255, 0.15) !important;
+	backdrop-filter: blur(8px);
+	-webkit-backdrop-filter: blur(8px);
+	border-color: #87ceeb !important;
+	border-width: 2px !important;
+	box-shadow: 0 2px 8px rgba(135, 206, 235, 0.2);
+	color: #1d2129 !important;
+}
+
+.login-form-glass .ant-input:focus,
+.login-form-glass .ant-input-affix-wrapper:focus,
+.login-form-glass .ant-input-affix-wrapper-focused {
+	background: rgba(255, 255, 255, 0.25) !important;
+	backdrop-filter: blur(10px);
+	-webkit-backdrop-filter: blur(10px);
+	border-color: #5eb8ff !important;
+	box-shadow: 0 0 0 3px rgba(94, 184, 255, 0.25), 0 2px 12px rgba(94, 184, 255, 0.3) !important;
+}
+
+/* 输入框内的文字颜色加强 */
+.login-form-glass .ant-input::placeholder {
+	color: rgba(29, 33, 41, 0.5) !important;
+	text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+/* 输入框前缀（+86）也用浅蓝边框 */
+.login-form-glass .ant-input-group-addon {
+	background: rgba(135, 206, 235, 0.15) !important;
+	border-color: #87ceeb !important;
+	border-width: 2px !important;
+	color: #165dff !important;
+	font-weight: 600;
+}
+
+/* 登录表单的标签文字 - 加强显示 */
+.login-form-glass .ant-form-item-label > label {
+	color: #1d2129 !important;
+	font-weight: 700;
+	font-size: 15px;
+	text-shadow: 0 1px 3px rgba(255, 255, 255, 1), 0 2px 8px rgba(255, 255, 255, 0.8);
+}
+
+/* 按钮样式 - 透明背景浅蓝边框 */
+.login-form-glass .ant-btn-primary {
+	background: transparent !important;
+	border-color: #87ceeb !important;
+	border-width: 2px !important;
+	color: #1d2129 !important;
+	box-shadow: 0 2px 8px rgba(135, 206, 235, 0.3);
+	font-weight: 700;
+	text-shadow: 0 1px 3px rgba(255, 255, 255, 1), 0 2px 6px rgba(255, 255, 255, 0.8);
+	transition: all 0.3s ease;
+}
+
+.login-form-glass .ant-btn-primary:hover {
+	background: rgba(135, 206, 235, 0.25) !important;
+	border-color: #5eb8ff !important;
+	color: #165dff !important;
+	box-shadow: 0 4px 16px rgba(94, 184, 255, 0.5);
+	transform: translateY(-2px);
+}
+
+/* 禁用状态的按钮 */
+.login-form-glass .ant-btn-primary:disabled {
+	background: transparent !important;
+	border-color: rgba(135, 206, 235, 0.3) !important;
+	color: rgba(0, 0, 0, 0.3) !important;
+	box-shadow: none;
+	text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
+}
+
+/* 标题文字加强显示 */
+.login-form-glass .ant-typography {
+	color: #1d2129 !important;
+	font-weight: 800;
+	font-size: 28px;
+	text-shadow: 0 2px 4px rgba(255, 255, 255, 1), 0 3px 10px rgba(255, 255, 255, 0.9);
+}
+
+/* 分割线也要可见 */
+.login-form-glass .ant-divider {
+	border-color: rgba(0, 0, 0, 0.15);
+	box-shadow: 0 1px 3px rgba(255, 255, 255, 0.8);
+}
+
+@keyframes slideUp {
+	from {
+		opacity: 0;
+		transform: translateY(30px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+/* 响应式优化 */
+@media (max-width: 768px) {
+	.background-image {
+		background-size: cover;
+		background-position: center;
+	}
+
+	.main-container-wrapper {
+		padding: 20px 10px;
+	}
+
+	.glass-card {
+		background: rgba(255, 255, 255, 0.12) !important;
+	}
+
+	.login-form-glass {
+		background: transparent !important;
+		padding: 30px 20px;
+	}
+}

@@ -3,6 +3,7 @@ import { App as AntdApp, ConfigProvider, message } from "antd";
 import LoginPage from "./pages/LoginPage";
 import BilibiliPage from "./pages/BilibiliPage";
 import PlaylistList from "./components/PlaylistList";
+import BackgroundImage from "./components/BackgroundImage";
 
 // 配置全局message
 message.config({
@@ -15,6 +16,8 @@ function App() {
 	return (
 		<ConfigProvider>
 			<AntdApp>
+				{/* 全局背景组件 */}
+				<BackgroundImage />
 				<Router>
 					<Routes>
 						{/* 根路径重定向到bvtc */}
