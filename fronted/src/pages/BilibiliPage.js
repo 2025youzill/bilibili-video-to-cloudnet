@@ -61,16 +61,23 @@ const BilibiliPage = () => {
 						if (!bvid && Array.isArray(data?.results)) {
 							// 兼容聚合结构（防旧格式）
 							const map = {};
+							const newSuggested = new Set(suggestedBvids);
 							data.results.forEach((r) => {
-								if (r.bvid && r.suggestedTitle) map[r.bvid] = r.suggestedTitle;
+								if (r.bvid && r.suggestedTitle) {
+									map[r.bvid] = r.suggestedTitle;
+									newSuggested.add(r.bvid);
+								}
 							});
 							if (Object.keys(map).length) {
 								setTitleOverride((prev) => ({ ...prev, ...map }));
+								setSuggestedBvids(newSuggested);
 							}
 							return;
 						}
 						if (bvid && suggestedTitle) {
 							setTitleOverride((prev) => ({ ...prev, [bvid]: suggestedTitle }));
+							// 标记该bvid已获取AI建议
+							setSuggestedBvids((prev) => new Set([...prev, bvid]));
 						}
 						if (error) {
 							// 单项失败仅提示，不中断整体
@@ -123,6 +130,8 @@ const BilibiliPage = () => {
 						const data = JSON.parse(ev.data || "{}");
 						if (data?.bvid === bvid && data?.suggestedTitle) {
 							setTitleOverride((prev) => ({ ...prev, [bvid]: data.suggestedTitle }));
+							// 标记该bvid已获取AI建议
+							setSuggestedBvids((prev) => new Set([...prev, bvid]));
 						}
 						if (!receivedAny) {
 							receivedAny = true;
@@ -158,6 +167,7 @@ const BilibiliPage = () => {
 	const [useOriginalTitle, setUseOriginalTitle] = useState(true);
 	const [titleOverride, setTitleOverride] = useState({}); // { bvid: title }
 	const [titleSuggesting, setTitleSuggesting] = useState(false);
+	const [suggestedBvids, setSuggestedBvids] = useState(new Set()); // 追踪已获取AI建议的bvid
 
 	const showError = (msg) => {
 		messageApi.error(msg);
@@ -819,18 +829,11 @@ const BilibiliPage = () => {
 								<Button
 									key="no"
 									type="primary"
-									loading={titleSuggesting}
-									onClick={async () => {
+									onClick={() => {
 										setUseOriginalTitle(false);
 										setKeepTitleModalVisible(false);
-										// 先打开编辑弹窗，再流式填充
+										// 打开编辑弹窗，不立即调用AI
 										setTitleEditModalVisible(true);
-										try {
-											await prepareTitleSuggestions();
-										} catch (e) {
-											message.error("AI 标题建议失败，请稍后重试");
-											setSelectedPlaylist(null);
-										}
 									}}
 								>
 									否，我要自定义
@@ -874,6 +877,19 @@ const BilibiliPage = () => {
 								>
 									确定
 								</Button>,
+								<Button
+									key="all-suggest"
+									loading={titleSuggesting}
+									onClick={async () => {
+										try {
+											await prepareTitleSuggestions();
+										} catch (e) {
+											message.error("获取AI建议失败，请稍后重试");
+										}
+									}}
+								>
+									全部AI建议
+								</Button>,
 							]}
 							centered
 							width={640}
@@ -893,7 +909,7 @@ const BilibiliPage = () => {
 													maxLength={60}
 												/>
 												<Button size="small" loading={titleSuggesting} onClick={() => regenerateSuggestion(bvid)}>
-													重新生成
+													{suggestedBvids.has(bvid) ? "重新生成" : "AI建议"}
 												</Button>
 											</div>
 										</div>
