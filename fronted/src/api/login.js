@@ -27,6 +27,30 @@ export const submitLogin = async ({ phone, captcha }) => {
 	}
 };
 
+// 获取网易云登录二维码（返回 image/png）
+export const getLoginQrcode = async () => {
+	try {
+		const response = await axiosInstance.get("/netcloud/login", {
+			responseType: "blob",
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+};
+
+// 检查二维码登录状态（后端为长轮询：可能阻塞一段时间）
+export const checkLoginQrcode = async () => {
+	try {
+		const response = await axiosInstance.get("/netcloud/login/verify", {
+			timeout: 200000,
+		});
+		return response.data;
+	} catch (error) {
+		throw error;
+	}
+};
+
 // 检查登录状态（新增）
 export const checkLoginStatus = async () => {
 	try {

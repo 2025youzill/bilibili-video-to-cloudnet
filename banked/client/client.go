@@ -25,12 +25,12 @@ It includes initialization and access methods for Netease Cloud Music and Bilibi
 package client
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"bvtc/config"
 
@@ -45,6 +45,7 @@ var (
 	netcApi *weapi.Api
 	netcCli *api.Client
 	biliCli *bilibili.Client
+	ctx = context.TODO()
 )
 
 // 单机下暴露初始化方法给主程序
@@ -58,9 +59,9 @@ func InitNetcloudCli(cookieFile string) error {
 	cfg := config.GetConfig()
 	var userCookieFile string
 	if cookieFile == "" {
-		userCookieFile = filepath.Join(append(strings.Split(cfg.Api.Cookie.Filepath, "/"), "cookie.json")...)
+		userCookieFile = filepath.Join(filepath.Clean(cfg.Api.Cookie.Filepath), "cookie.json")
 	} else {
-		userCookieFile = filepath.Join(append(strings.Split(cfg.Api.Cookie.Filepath, "/"), cookieFile)...)
+		userCookieFile = filepath.Join(filepath.Clean(cfg.Api.Cookie.Filepath), cookieFile)
 	}
 	// 检查 cookie 文件是否存在，如果不存在则创建
 	if _, err := os.Stat(userCookieFile); os.IsNotExist(err) {
@@ -130,9 +131,9 @@ func MultiInitNetcloudCli(cookieFile string) (*weapi.Api, *api.Client, error) {
 	cfg := config.GetConfig()
 	var userCookieFile string
 	if cookieFile == "" {
-		userCookieFile = filepath.Join(append(strings.Split(cfg.Api.Cookie.Filepath, "/"), "cookie.json")...)
+		userCookieFile = filepath.Join(filepath.Clean(cfg.Api.Cookie.Filepath), "cookie.json")
 	} else {
-		userCookieFile = filepath.Join(append(strings.Split(cfg.Api.Cookie.Filepath, "/"), cookieFile)...)
+		userCookieFile = filepath.Join(filepath.Clean(cfg.Api.Cookie.Filepath), cookieFile)
 	}
 	// 检查 cookie 文件是否存在，如果不存在则创建
 	if _, err := os.Stat(userCookieFile); os.IsNotExist(err) {
@@ -167,27 +168,18 @@ func MultiInitNetcloudCli(cookieFile string) (*weapi.Api, *api.Client, error) {
 			Interval: cfg.Api.Cookie.Interval,
 		},
 	}
-
 	// 初始化客户端
 	netcCli = api.New(&netcApiCfg)
 	netcApi = weapi.New(netcCli)
 	return netcApi, netcCli, nil
 }
 
-func MultiGetNetcloudApi(cookieFile string) (*weapi.Api, error) {
-	netcApi, _, err := MultiInitNetcloudCli(cookieFile)
+func MultiGetNetcloudApi(cookieFile string) (*weapi.Api, *api.Client, error) {
+	netcApi, cli, err := MultiInitNetcloudCli(cookieFile)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return netcApi, nil
-}
-
-func MultiGetNetcloudCli(cookieFile string) (*api.Client, error) {
-	_, netcCli, err := MultiInitNetcloudCli(cookieFile)
-	if err != nil {
-		return nil, err
-	}
-	return netcCli, nil
+	return netcApi, cli, nil
 }
 
 // 单机下游客访问bilibili客户端

@@ -27,16 +27,17 @@ import (
 	"bvtc/response"
 	redis_pool "bvtc/tool/pool"
 	"bvtc/tool/session"
+	"bytes"
 	"context"
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/chaunsin/netease-cloud-music/api/weapi"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gin-gonic/gin"
+	"github.com/skip2/go-qrcode"
 )
 
 type LoginReq struct {
@@ -61,12 +62,13 @@ func SendByPhone(ctx *gin.Context) {
 
 	cookieFile := filepath.Join(session.GenerateSessionID(32) + ".json")
 
-	api, err := client.MultiGetNetcloudApi(cookieFile)
+	api, cli, err := client.MultiGetNetcloudApi(cookieFile)
 	if err != nil {
 		log.Logger.Error("client fail to init", log.Any("err : ", err))
 		ctx.JSON(http.StatusInternalServerError, response.FailMsg("client fail to init"))
 		return
 	}
+	defer cli.Close(context.Background())
 
 	//发送验证码
 	resp, err := api.SendSMS(ctx, &weapi.SendSMSReq{Cellphone: req.Phone, CtCode: req.CtCode})
@@ -81,16 +83,12 @@ func SendByPhone(ctx *gin.Context) {
 	spew.Dump("sid : ", sid)
 	ctx.SetSameSite(http.SameSiteLaxMode)
 	ctx.SetCookie("SessionId", sid, 60*10, "/", "", false, true)
-	rdb := redis_pool.GetRdb()
-	rtcx := redis_pool.GetRctx()
-	key := "session:" + sid
-	rdb.HSet(rtcx, key, map[string]interface{}{
-		"cookieFile": cookieFile,
-		"createdAt":  time.Now().Format(time.RFC3339),
-		"isValid":    "true",
-	})
-	// 设置 Redis 会话键 10 分钟过期
-	rdb.Expire(rtcx, key, 10*time.Minute)
+	err = session.SetNewCookie(cookieFile, sid)
+	if err != nil {
+		log.Logger.Error("redis fail to create", log.Any("err : ", err))
+		ctx.JSON(http.StatusInternalServerError, response.FailMsg("redis fail to create"))
+		return
+	}
 
 	log.Logger.Info("email success to send", log.Any("phone : ", req.Phone))
 	ctx.JSON(http.StatusOK, response.SuccessMsg("email success to send"))
@@ -111,25 +109,28 @@ func VerifyCaptcha(ctx *gin.Context) {
 		return
 	}
 	spew.Dump("sid : ", sid)
-	rdb := redis_pool.GetRdb()
-	rtcx := redis_pool.GetRctx()
-	key := "session:" + sid
-	cookieFile, _ := rdb.HGet(rtcx, key, "cookieFile").Result()
+	cookieFile := session.GetCookieBySession(sid)
 	if cookieFile == "" {
 		log.Logger.Error("cookie file not found", log.String("sid", sid))
 		ctx.JSON(http.StatusBadRequest, response.FailMsg("cookie file not found"))
 		return
 	}
 
-	api, err := client.MultiGetNetcloudApi(cookieFile)
+	api, cli, err := client.MultiGetNetcloudApi(cookieFile)
 	if err != nil {
 		log.Logger.Error("client fail to init", log.Any("err : ", err))
 		ctx.JSON(http.StatusInternalServerError, response.FailMsg("client fail to init"))
 		return
 	}
+	defer cli.Close(context.Background())
 
 	var req VerifyReq
-	ctx.ShouldBindJSON(&req)
+	err = ctx.ShouldBindJSON(&req)
+	if err != nil {
+		log.Logger.Error("fail to bind verify json", log.Any("err", err))
+		ctx.JSON(http.StatusBadRequest, response.FailMsg("fail to bind verify json"))
+		return
+	}
 	if req.Phone == "" {
 		log.Logger.Error("phone number is empty")
 		ctx.JSON(http.StatusBadRequest, response.FailMsg("phone number is empty"))
@@ -179,17 +180,15 @@ func VerifyCaptcha(ctx *gin.Context) {
 
 	ctx.SetSameSite(http.SameSiteLaxMode)
 	ctx.SetCookie("SessionId", sid, 60*60*24*7, "/", "", false, true)
+	err = redis_pool.ExtendTimeForCookie(sid)
+	if err != nil {
+		log.Logger.Error("redis fail to extend time", log.Any("err : ", err))
+		ctx.JSON(http.StatusInternalServerError, response.FailMsg("redis fail to extend time"))
+		return
+	}
 
 	log.Logger.Info("user netclogin", log.Any("user : ", user))
-
-	// 登录成功后，将 Redis 中的会话有效期延长至 7 天，并刷新标记
-	rdb.HSet(rtcx, key, map[string]interface{}{
-		"createdAt": time.Now().Format(time.RFC3339),
-		"isValid":   "true",
-	})
-	rdb.Expire(rtcx, key, 7*24*time.Hour)
 	ctx.JSON(http.StatusOK, response.SuccessMsg(""))
-
 }
 
 func CheckCookie(ctx *gin.Context) {
@@ -213,7 +212,7 @@ func CheckCookie(ctx *gin.Context) {
 
 	// 检查cookie文件是否存在且有内容
 	cfg := config.GetConfig()
-	cookieFilePath := filepath.Join(append(strings.Split(cfg.Api.Cookie.Filepath, "/"), cookieFile)...)
+	cookieFilePath := filepath.Join(filepath.Clean(cfg.Api.Cookie.Filepath), cookieFile)
 	if _, err := os.ReadFile(cookieFilePath); err != nil {
 		log.Logger.Error("Cookie file not found or cannot be read", log.String("filePath", cookieFilePath), log.Any("err", err))
 		ctx.JSON(http.StatusBadRequest, response.FailMsg("Cookie file not found"))
@@ -258,7 +257,8 @@ func DeleteCookie(ctx *gin.Context) {
 	if cookieFile != "" {
 		cfg := config.GetConfig()
 		// 生成与创建时相同的路径：<cfg.Api.Cookie.Filepath>/<cookieFile>
-		filePath := filepath.Join(append(strings.Split(cfg.Api.Cookie.Filepath, "/"), cookieFile)...)
+		filePath := filepath.Join(filepath.Clean(cfg.Api.Cookie.Filepath), cookieFile)
+		// filePath := filepath.Join(append(strings.Split(cfg.Api.Cookie.Filepath, "/"), cookieFile)...)
 		if err := os.Remove(filePath); err != nil {
 			if !os.IsNotExist(err) {
 				log.Logger.Error("failed to remove cookie file", log.Any("file", filePath), log.Any("err", err))
@@ -274,4 +274,135 @@ func DeleteCookie(ctx *gin.Context) {
 	ctx.SetCookie("SessionId", "", -1, "/", "", false, true)
 
 	ctx.JSON(http.StatusOK, response.SuccessMsg("cookie deleted"))
+}
+
+// 二维码登录
+func GetLoginQrcode(ctx *gin.Context) {
+	cookieFile := filepath.Join(session.GenerateSessionID(32) + ".json")
+	api, cli, err := client.MultiGetNetcloudApi(cookieFile)
+	if err != nil {
+		log.Logger.Error("client fail to init", log.Any("err : ", err))
+		ctx.JSON(http.StatusInternalServerError, response.FailMsg("client fail to init"))
+		return
+	}
+	defer cli.Close(context.Background())
+	spew.Dump("cookieFile : ", cookieFile)
+
+	// 创建二维码key
+	qrKey, err := api.QrcodeCreateKey(ctx, &weapi.QrcodeCreateKeyReq{Type: 1})
+	if err != nil {
+		log.Logger.Error("fail to create qrcode key", log.Any("err : ", err))
+		ctx.JSON(http.StatusBadRequest, response.FailMsg("fail to create qrcode key"))
+		return
+	}
+	if qrKey.UniKey == "" {
+		log.Logger.Error("fail to create qrcode key", log.Any("err : ", "Key os empty"))
+		ctx.JSON(http.StatusBadRequest, response.FailMsg("fail to create qrcode key"))
+		return
+	}
+
+	// 创建二维码
+	qr, err := api.QrcodeGenerate(ctx, &weapi.QrcodeGenerateReq{CodeKey: qrKey.UniKey, Level: qrcode.Medium, Platform: "web"})
+	if err != nil {
+		log.Logger.Error("fail to create qrcode", log.Any("err : ", err))
+		ctx.JSON(http.StatusBadRequest, response.FailMsg("fail to create qrcode"))
+		return
+	}
+
+	sid := session.GenerateSessionID(16)
+	ctx.SetSameSite(http.SameSiteLaxMode)
+	ctx.SetCookie("SessionId", sid, 60*10, "/", "", false, true)
+
+	err = session.SetNewQrcodeUniKey(sid, qrKey.UniKey)
+	if err != nil {
+		log.Logger.Error("redis fail to set", log.Any("err : ", err))
+		ctx.JSON(http.StatusInternalServerError, response.FailMsg("redis fail to set"))
+		return
+	}
+	err = session.SetNewCookie(cookieFile, sid)
+	if err != nil {
+		log.Logger.Error("redis fail to set", log.Any("err : ", err))
+		ctx.JSON(http.StatusInternalServerError, response.FailMsg("redis fail to set"))
+		return
+	}
+
+	ctx.Header("Content-Type", "image/png")
+	ctx.Header("Cache-Control", "no-cache, no-store")
+	ctx.Writer.Write(bytes.NewBuffer(qr.Qrcode).Bytes())
+
+	ctx.JSON(http.StatusOK, response.SuccessMsg("success to generate qr"))
+
+}
+
+func CheckLoginQrcode(ctx *gin.Context) {
+	sid, err := ctx.Cookie("SessionId")
+	if err != nil {
+		log.Logger.Error("fail to get sessionId", log.Any("err : ", err))
+		ctx.JSON(http.StatusBadRequest, response.FailMsg("fail to get sessionId"))
+		return
+	}
+	cookieFile := session.GetCookieBySession(sid)
+	if cookieFile == "" {
+		log.Logger.Error("cookie file not found", log.String("sid", sid))
+		ctx.JSON(http.StatusBadRequest, response.FailMsg("cookie file not found"))
+		return
+	}
+	unikey, err := session.GetQrcodeUniKeyBySession(sid)
+	if err != nil {
+		log.Logger.Error("unikey not found", log.Any("err : ", err))
+		ctx.JSON(http.StatusBadRequest, response.FailMsg("unikey not found"))
+		return
+	}
+
+	api, cli, err := client.MultiGetNetcloudApi(cookieFile)
+	if err != nil {
+		log.Logger.Error("client fail to init", log.Any("err : ", err))
+		ctx.JSON(http.StatusInternalServerError, response.FailMsg("client fail to init"))
+		return
+	}
+	defer cli.Close(context.Background())
+	timeCount := 0
+	maxTimeCount := 60
+	for timeCount < maxTimeCount {
+		timeCount++
+		time.Sleep(3 * time.Second)
+		resp, err := api.QrcodeCheck(ctx, &weapi.QrcodeCheckReq{Type: 1, Key: unikey})
+		if err != nil {
+			log.Logger.Error("fail to login", log.Any("err : ", err))
+			ctx.JSON(http.StatusInternalServerError, response.FailMsg("fail to login"))
+			return
+		}
+		switch resp.Code {
+		case 800: // 二维码不存在或已过期
+			log.Logger.Error("fail to login", log.Any("resp : ", resp))
+			ctx.JSON(http.StatusInternalServerError, response.FailMsg("fail to login"))
+			return
+		case 801: // 等待扫码
+			continue
+		case 802: // 正在扫码授权中
+			continue
+		case 803: // 授权登录成功
+			goto ok
+		default:
+			log.Logger.Error("fail to login", log.Any("resp : ", resp))
+			ctx.JSON(http.StatusInternalServerError, response.FailMsg("fail to login"))
+			return
+		}
+	}
+	log.Logger.Error("qrcode poll timeout")
+	ctx.JSON(http.StatusRequestTimeout, response.FailMsg("qrcode login timeout"))
+	return
+ok:
+
+	user, err := api.GetUserInfo(ctx, &weapi.GetUserInfoReq{})
+	if err != nil {
+		log.Logger.Error("获取用户信息失败", log.Any("err : ", err))
+		ctx.JSON(http.StatusInternalServerError, response.FailMsg("获取用户信息失败"))
+		return
+	}
+	ctx.SetSameSite(http.SameSiteLaxMode)
+	ctx.SetCookie("SessionId", sid, 60*60*24*7, "/", "", false, true)
+	redis_pool.ExtendTimeForCookie(sid)
+	log.Logger.Info("user netclogin", log.Any("user : ", user))
+	ctx.JSON(http.StatusOK, response.SuccessMsg("success to login"))
 }

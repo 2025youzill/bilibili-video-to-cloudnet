@@ -24,6 +24,8 @@ import (
 	"bvtc/config"
 	"bvtc/log"
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -53,4 +55,33 @@ func GetRctx() context.Context {
 
 func GetRdb() *redis.Client {
 	return rdb
+}
+
+// 将 Redis 中的会话有效期延长至 7 天，并刷新标记
+func ExtendTimeForCookie(sid string) error {
+	if sid == "" {
+		return fmt.Errorf("sid is empty")
+	}
+	if rdb == nil {
+		return fmt.Errorf("redis client is nil")
+	}
+	key := "session:" + sid
+
+	exists, err := rdb.Exists(ctx, key).Result()
+	if err != nil {
+		return fmt.Errorf("redis check exists failed: %w", err)
+	}
+	if exists == 0 {
+		return fmt.Errorf("session not exists or expired")
+	}
+
+	ok, err := rdb.Expire(ctx, key, 7*24*time.Hour).Result()
+	if err != nil {
+		return fmt.Errorf("redis expire failed: %w", err)
+	}
+	if !ok {
+		return fmt.Errorf("session expire refresh failed")
+	}
+
+	return nil
 }

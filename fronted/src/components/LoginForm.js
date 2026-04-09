@@ -28,7 +28,7 @@ const LoginForm = () => {
 				message: "请输入11位中国大陆手机号",
 			},
 		],
-		[]
+		[],
 	);
 
 	const captchaRules = useMemo(
@@ -36,7 +36,7 @@ const LoginForm = () => {
 			{ required: true, message: "请输入验证码" },
 			{ len: 4, message: "验证码为4位数字" },
 		],
-		[]
+		[],
 	);
 
 	const handleSendCaptcha = async () => {

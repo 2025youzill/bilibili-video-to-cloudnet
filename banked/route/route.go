@@ -64,8 +64,12 @@ func NewRouter() *gin.Engine {
 // registerRoutes 注册所有API路由
 func registerRoutes(group *gin.RouterGroup) {
 	// 公开接口（不需要认证）
-	group.POST("/netcloud/login", cloudnet.SendByPhone)          // 发送验证码
-	group.POST("/netcloud/login/verify", cloudnet.VerifyCaptcha) // 验证验证码
+	// 验证码风控，转用二维码登录
+	// group.POST("/netcloud/login", cloudnet.SendByPhone)          // 发送验证码
+	// group.POST("/netcloud/login/verify", cloudnet.VerifyCaptcha) // 验证验证码
+	group.GET("/netcloud/login", cloudnet.GetLoginQrcode)          // 获取二维码
+	group.GET("/netcloud/login/verify", cloudnet.CheckLoginQrcode) // 验证二维码状态
+	group.GET("/netcloud/login/check", cloudnet.CheckCookie)       // 检查登陆状态
 
 	// 测试接口
 	group.GET("/test/bilibili/download", bilibili.DownloadVideo)
@@ -75,7 +79,6 @@ func registerRoutes(group *gin.RouterGroup) {
 	authGroup := group.Group("/")
 	authGroup.Use(middleware.SessionAuthMiddleware())
 	{
-		authGroup.GET("/netcloud/login/check", cloudnet.CheckCookie)  // 检查登陆状态
 		authGroup.POST("/netcloud/logout", cloudnet.DeleteCookie)     // 退出登录,删除状态（改为POST防CSRF）
 		authGroup.GET("/netcloud/playlist", cloudnet.ShowPlaylist)    //获取歌单
 		authGroup.GET("/netcloud/useravatar", cloudnet.GetUserAvatar) //获取用户头像

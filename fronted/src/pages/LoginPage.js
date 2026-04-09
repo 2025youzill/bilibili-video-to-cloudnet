@@ -1,33 +1,45 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import LoginForm from "../components/LoginForm";
+import QrLoginForm from "../components/QrLoginForm";
 import { checkLoginStatus } from "../api/login";
-import { Button, GithubOutlined, EyeOutlined, EyeInvisibleOutlined } from "antd";
-import { GithubOutlined as GithubIcon, EyeOutlined as EyeIcon, EyeInvisibleOutlined as EyeInvisibleIcon } from "@ant-design/icons";
+import { Button } from "antd";
+import {
+	GithubOutlined as GithubIcon,
+	EyeOutlined as EyeIcon,
+	EyeInvisibleOutlined as EyeInvisibleIcon,
+} from "@ant-design/icons";
 
 const LoginPage = () => {
 	const navigate = useNavigate();
 	const [backgroundVisible, setBackgroundVisible] = useState(true);
 	const [topbarVisible, setTopbarVisible] = useState(false);
+	const [isLoggedIn, setIsLoggedIn] = useState(null); // null: checking, false: no, true: yes
 
-	// 合并为单个 useEffect 检查登录状态
 	useEffect(() => {
 		const checkAuth = async () => {
 			try {
-				// 统一使用 checkLoginStatus 接口（已封装 axios 请求）
 				const res = await checkLoginStatus();
 				if (res.code === 200) {
-					// 后端 CheckCookie 接口返回 code=200 表示已登录（根据后端代码 netclogin.CheckCookie 实现）
 					navigate("/bilibili");
+					setIsLoggedIn(true);
+				} else {
+					setIsLoggedIn(false);
 				}
 			} catch (error) {
-				// 接口调用失败或未登录，保持当前页面
-				// console.log("无有效登录状态，请登录");
+				setIsLoggedIn(false);
 			}
 		};
 
 		checkAuth();
 	}, [navigate]);
+
+	if (isLoggedIn === null) {
+		return (
+			<div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
+				Checking login status...
+			</div>
+		);
+	}
 
 	return (
 		<div className="login-page-with-bg">
@@ -109,10 +121,10 @@ const LoginPage = () => {
 				</a>
 			</div>
 
-		{/* 登录表单 */}
-		<div className="login-form-glass">
-			<LoginForm />
-		</div>
+			{/* 登录表单 */}
+			<div className="login-form-glass">
+				<QrLoginForm />
+			</div>
 		</div>
 	);
 };
