@@ -43,6 +43,20 @@ const LoginPage = () => {
 
 	return (
 		<div className="login-page-with-bg">
+			{/* 背景遮罩层 - 当隐藏背景时显示 */}
+			{!backgroundVisible && (
+				<div
+					style={{
+						position: "fixed",
+						top: 0,
+						left: 0,
+						width: "100vw",
+						height: "100vh",
+						background: "#ffffff",
+						zIndex: -2,
+					}}
+				/>
+			)}
 			{/* 隐形触发区域 - 鼠标移到顶部时显示框 */}
 			<div
 				style={{
