@@ -3,9 +3,11 @@ banked/tool/ffmpeg/ffmpeg.exe
 banked/tool/ffmpeg/ffmpeg
 banked/user
 banked/log/logs
+banked/Dockerfile
 test
 .env
 redis.conf
 fronted/nginx.conf
 fronted/public/picture
+fronted/Dockerfile
 docker-compose.yml
