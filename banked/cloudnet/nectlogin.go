@@ -82,7 +82,7 @@ func SendByPhone(ctx *gin.Context) {
 	sid := session.GenerateSessionID(16)
 	spew.Dump("sid : ", sid)
 	ctx.SetSameSite(http.SameSiteLaxMode)
-	ctx.SetCookie("SessionId", sid, 60*10, "/", "", false, true)
+	ctx.SetCookie("SessionId", sid, 60*10, "/", "", true, true)
 	err = session.SetNewCookie(cookieFile, sid)
 	if err != nil {
 		log.Logger.Error("redis fail to create", log.Any("err : ", err))
@@ -179,7 +179,7 @@ func VerifyCaptcha(ctx *gin.Context) {
 	}
 
 	ctx.SetSameSite(http.SameSiteLaxMode)
-	ctx.SetCookie("SessionId", sid, 60*60*24*7, "/", "", false, true)
+	ctx.SetCookie("SessionId", sid, 60*60*24*7, "/", "", true, true)
 	err = redis_pool.ExtendTimeForCookie(sid)
 	if err != nil {
 		log.Logger.Error("redis fail to extend time", log.Any("err : ", err))
@@ -271,7 +271,7 @@ func DeleteCookie(ctx *gin.Context) {
 
 	// 清除浏览器端 SessionId Cookie（保持与设置时同样的属性）
 	ctx.SetSameSite(http.SameSiteLaxMode)
-	ctx.SetCookie("SessionId", "", -1, "/", "", false, true)
+	ctx.SetCookie("SessionId", "", -1, "/", "", true, true)
 
 	ctx.JSON(http.StatusOK, response.SuccessMsg("cookie deleted"))
 }
@@ -311,7 +311,7 @@ func GetLoginQrcode(ctx *gin.Context) {
 
 	sid := session.GenerateSessionID(16)
 	ctx.SetSameSite(http.SameSiteLaxMode)
-	ctx.SetCookie("SessionId", sid, 60*10, "/", "", false, true)
+	ctx.SetCookie("SessionId", sid, 60*10, "/", "", true, true)
 
 	err = session.SetNewQrcodeUniKey(sid, qrKey.UniKey)
 	if err != nil {
@@ -401,7 +401,7 @@ ok:
 		return
 	}
 	ctx.SetSameSite(http.SameSiteLaxMode)
-	ctx.SetCookie("SessionId", sid, 60*60*24*7, "/", "", false, true)
+	ctx.SetCookie("SessionId", sid, 60*60*24*7, "/", "", true, true)
 	redis_pool.ExtendTimeForCookie(sid)
 	log.Logger.Info("user netclogin", log.Any("user : ", user))
 	ctx.JSON(http.StatusOK, response.SuccessMsg("success to login"))

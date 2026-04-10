@@ -22,6 +22,8 @@ package cloudnet
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -65,23 +67,16 @@ func UploadToNetCloud(filename string, splaylist bool, pid int64, cookiefile str
 		return errors.New("file error")
 	}
 
-	data, err := io.ReadAll(file)
-	if err != nil {
-		log.Logger.Error("fail to read file", log.Any("err : ", err))
-		return errors.New("file error")
+	hash := md5.New()
+	if _, err := io.Copy(hash, file); err != nil {
+		log.Logger.Error("fail to calculate file md5", log.Any("err", err))
+		return errors.New("file md5 error")
 	}
+	md5Sum := hex.EncodeToString(hash.Sum(nil))
 
-	md5, err := utils.MD5Hex(data)
-	if err != nil {
-		log.Logger.Error("fail to change to MD5Hex", log.Any("err : ", err))
-		return errors.New("file error")
-	}
-
-	// 重新设置文件指针到开头
-	_, err = file.Seek(0, io.SeekStart)
-	if err != nil {
-		log.Logger.Error("fail to set header", log.Any("err : ", err))
-		return errors.New("file error")
+	if _, err := file.Seek(0, io.SeekStart); err != nil {
+		log.Logger.Error("fail to seek file to start", log.Any("err", err))
+		return errors.New("file seek error")
 	}
 
 	// 检查此文件是否需要上传
@@ -89,7 +84,7 @@ func UploadToNetCloud(filename string, splaylist bool, pid int64, cookiefile str
 		Bitrate: bitrate,
 		Ext:     ext,
 		Length:  fmt.Sprintf("%d", stat.Size()),
-		Md5:     md5,
+		Md5:     md5Sum,
 		SongId:  "0",
 		Version: "1",
 	}
@@ -115,7 +110,7 @@ func UploadToNetCloud(filename string, splaylist bool, pid int64, cookiefile str
 		Local:      "false",
 		NosProduct: "3",
 		Type:       "audio",
-		Md5:        md5,
+		Md5:        md5Sum,
 	}
 	allocResp, err := api.CloudTokenAlloc(ctx, &allocReq)
 	if err != nil {
@@ -161,7 +156,7 @@ func UploadToNetCloud(filename string, splaylist bool, pid int64, cookiefile str
 		return errors.New("fail to upload")
 	}
 	InfoReq := weapi.CloudInfoReq{
-		Md5:        md5,
+		Md5:        md5Sum,
 		SongId:     resp.SongId,
 		Filename:   stat.Name(),
 		Song:       utils.Ternary(metadata.Title() != "", metadata.Title(), filepath.Base(filename)),
