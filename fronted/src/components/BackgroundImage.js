@@ -33,19 +33,26 @@ const BackgroundImage = () => {
 	const [layer1State, setLayer1State] = useState("hidden"); // hidden, zooming, visible, fading
 	const [layer2State, setLayer2State] = useState("hidden");
 
+	const [isImageLoadFailed, setIsImageLoadFailed] = useState(false);
+
 	useEffect(() => {
 		// 初始化：随机选择第一张背景图并预加载
 		const initialBg = backgrounds[Math.floor(Math.random() * backgrounds.length)];
 
-		preloadImage(initialBg).then(() => {
-			setLayer1Image(initialBg);
-			setLayer1State("zooming");
-			setActiveLayer(1);
-			// 1.5秒后动画完成
-			setTimeout(() => {
-				setLayer1State("visible");
-			}, 1500);
-		});
+		preloadImage(initialBg)
+			.then(() => {
+				setLayer1Image(initialBg);
+				setLayer1State("zooming");
+				setActiveLayer(1);
+				// 1.5秒后动画完成
+				setTimeout(() => {
+					setLayer1State("visible");
+				}, 1500);
+			})
+			.catch(() => {
+				// 如果第一张图片预加载失败（比如文件夹不存在），记录状态
+				setIsImageLoadFailed(true);
+			});
 
 		// 预加载所有背景图片
 		backgrounds.forEach((bg) => {
@@ -129,28 +136,45 @@ const BackgroundImage = () => {
 
 	return (
 		<>
-			{/* 图层1 - 使用图片URL作为key */}
-			{layer1Image && layer1State !== "hidden" && (
+			{/* 如果图片加载失败或没有图片，显示纯白色背景 */}
+			{isImageLoadFailed ? (
 				<div
-					key={`layer1-${layer1Image}`}
-					className={getLayerClassName(layer1State)}
 					style={{
-						backgroundImage: `url(${layer1Image})`,
+						position: "fixed",
+						top: 0,
+						left: 0,
+						width: "100vw",
+						height: "100vh",
+						background: "#ffffff",
+						zIndex: -5,
 					}}
 				/>
+			) : (
+				<>
+					{/* 图层1 - 使用图片URL作为key */}
+					{layer1Image && layer1State !== "hidden" && (
+						<div
+							key={`layer1-${layer1Image}`}
+							className={getLayerClassName(layer1State)}
+							style={{
+								backgroundImage: `url(${layer1Image})`,
+							}}
+						/>
+					)}
+					{/* 图层2 - 使用图片URL作为key */}
+					{layer2Image && layer2State !== "hidden" && (
+						<div
+							key={`layer2-${layer2Image}`}
+							className={getLayerClassName(layer2State)}
+							style={{
+								backgroundImage: `url(${layer2Image})`,
+							}}
+						/>
+					)}
+					{/* 半透明渐变遮罩层 */}
+					<div className="background-overlay" />
+				</>
 			)}
-			{/* 图层2 - 使用图片URL作为key */}
-			{layer2Image && layer2State !== "hidden" && (
-				<div
-					key={`layer2-${layer2Image}`}
-					className={getLayerClassName(layer2State)}
-					style={{
-						backgroundImage: `url(${layer2Image})`,
-					}}
-				/>
-			)}
-			{/* 半透明渐变遮罩层 */}
-			<div className="background-overlay" />
 		</>
 	);
 };
