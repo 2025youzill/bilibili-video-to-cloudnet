@@ -20,7 +20,7 @@
 - 歌名识别部分由于设备限制暂时所用为 ollama 下的阿里 qwen 2.5 1.5B 的模型，单首歌响应时间约为 10s 左右，采用 SSE 流式传输，有时候可能有些歌名返回会丢失 <s>(奇怪的bug)</s> ，点击“重新生成”便可以，有缓存后很快输出。
 - go 程序推荐使用 air 运行（可热重载），相关信息可查看 git 仓库：[☁️ Live reload for Go apps](https://github.com/air-verse/air)
 - 前端图片路径为 **.../fronted/public/picture**
-- 项目在线部署在 [https://youzill.top/bvtc](https://youzill.top/bvtc/login) (禁止魔法访问哦\~也尽量不要用魔法测试netc端口，容易风控\~)
+- 项目在线部署在 ~https://youzill.top/bvtc~ （等用境外服务器重新适配）
 
 ## :gear:运行
 
