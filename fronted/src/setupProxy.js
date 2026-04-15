@@ -4,7 +4,7 @@ module.exports = function (app) {
 	app.use(
 		"/bvtc/api",
 		createProxyMiddleware({
-			target: "http://localhost:8080",
+			target: "http://localhost:8081",
 			changeOrigin: true,
 			secure: false,
 			logLevel: "debug",

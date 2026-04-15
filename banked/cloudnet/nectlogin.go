@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Youzill
+﻿// Copyright (c) 2025 Youzill
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -27,8 +27,10 @@ import (
 	"bvtc/response"
 	redis_pool "bvtc/tool/pool"
 	"bvtc/tool/session"
+	"bvtc/tool/socket"
 	"bytes"
 	"context"
+	"errors"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -237,7 +239,6 @@ func CheckCookie(ctx *gin.Context) {
 	}
 	log.Logger.Info("user already login")
 	ctx.JSON(http.StatusOK, response.SuccessMsg("user already login"))
-
 }
 
 func DeleteCookie(ctx *gin.Context) {
@@ -334,6 +335,51 @@ func GetLoginQrcode(ctx *gin.Context) {
 
 }
 
+func sendSocketResponse(wsClient *socket.Client, sid string, code int, msg string, data interface{}) bool {
+	payload := response.Msg(code, msg, data)
+	if err := wsClient.SendJSON(payload); err != nil {
+		log.Logger.Error("failed to send websocket message", log.Any("err", err), log.String("sid", sid), log.Any("payload", payload))
+		return false
+	}
+	return true
+}
+
+func processQrcodeStatus(pollCtx context.Context, wsClient *socket.Client, sid string, api *weapi.Api, resp *weapi.QrcodeCheckResp) bool {
+	switch resp.Code {
+	case 800:
+		_ = session.DelQrcodeUniKey(sid)
+		sendSocketResponse(wsClient, sid, 800, "qr is not exist or expired", nil)
+		return true
+	case 801:
+		sendSocketResponse(wsClient, sid, 801, "waiting for scan", nil)
+		return false
+	case 802:
+		sendSocketResponse(wsClient, sid, 802, "waiting for confirm", nil)
+		return false
+	case 803:
+		user, err := api.GetUserInfo(pollCtx, &weapi.GetUserInfoReq{})
+		if err != nil {
+			log.Logger.Error("get user info failed", log.Any("err : ", err))
+			sendSocketResponse(wsClient, sid, 500, "获取用户信息失败", nil)
+			return true
+		}
+
+		if err := redis_pool.ExtendTimeForCookie(sid); err != nil {
+			log.Logger.Error("redis fail to extend time", log.Any("err : ", err))
+			sendSocketResponse(wsClient, sid, 500, "redis fail to extend time", nil)
+			return true
+		}
+
+		_ = session.DelQrcodeUniKey(sid)
+		sendSocketResponse(wsClient, sid, 200, "success to login", user)
+		return true
+	default:
+		log.Logger.Error("unknown qrcode status", log.Any("resp : ", resp))
+		sendSocketResponse(wsClient, sid, 500, "unknown qrcode status", nil)
+		return true
+	}
+}
+
 func CheckLoginQrcode(ctx *gin.Context) {
 	sid, err := ctx.Cookie("SessionId")
 	if err != nil {
@@ -354,55 +400,66 @@ func CheckLoginQrcode(ctx *gin.Context) {
 		return
 	}
 
+	wsClient, err := socket.Upgrade(ctx, sid)
+	if err != nil {
+		log.Logger.Error("upgrade websocket failed", log.Any("err", err), log.String("sid", sid))
+		return
+	}
+	defer wsClient.Close()
+
 	api, cli, err := client.MultiGetNetcloudApi(cookieFile)
 	if err != nil {
 		log.Logger.Error("client fail to init", log.Any("err : ", err))
-		ctx.JSON(http.StatusInternalServerError, response.FailMsg("client fail to init"))
+		sendSocketResponse(wsClient, sid, 500, "client fail to init", nil)
 		return
 	}
 	defer cli.Close(context.Background())
-	timeCount := 0
-	maxTimeCount := 60
-	for timeCount < maxTimeCount {
-		timeCount++
-		time.Sleep(3 * time.Second)
-		resp, err := api.QrcodeCheck(ctx, &weapi.QrcodeCheckReq{Type: 1, Key: unikey})
-		if err != nil {
-			log.Logger.Error("fail to login", log.Any("err : ", err))
-			ctx.JSON(http.StatusInternalServerError, response.FailMsg("fail to login"))
-			return
-		}
-		switch resp.Code {
-		case 800: // 二维码不存在或已过期
-			log.Logger.Error("fail to login", log.Any("resp : ", resp))
-			ctx.JSON(http.StatusInternalServerError, response.FailMsg("fail to login"))
-			return
-		case 801: // 等待扫码
-			continue
-		case 802: // 正在扫码授权中
-			continue
-		case 803: // 授权登录成功
-			goto ok
-		default:
-			log.Logger.Error("fail to login", log.Any("resp : ", resp))
-			ctx.JSON(http.StatusInternalServerError, response.FailMsg("fail to login"))
-			return
-		}
-	}
-	log.Logger.Error("qrcode poll timeout")
-	ctx.JSON(http.StatusRequestTimeout, response.FailMsg("qrcode login timeout"))
-	return
-ok:
 
-	user, err := api.GetUserInfo(ctx, &weapi.GetUserInfoReq{})
+	log.Logger.Debug("start ws")
+
+	pollCtx, cancel := context.WithTimeout(ctx.Request.Context(), 3*time.Minute)
+	defer cancel()
+
+	ticker := time.NewTicker(3 * time.Second)
+	defer ticker.Stop()
+
+	var lastCode int64 = -1
+	initialResp, err := api.QrcodeCheck(pollCtx, &weapi.QrcodeCheckReq{Type: 1, Key: unikey})
 	if err != nil {
-		log.Logger.Error("获取用户信息失败", log.Any("err : ", err))
-		ctx.JSON(http.StatusInternalServerError, response.FailMsg("获取用户信息失败"))
+		log.Logger.Error("fail to login", log.Any("err : ", err))
+		sendSocketResponse(wsClient, sid, 500, "fail to login", nil)
 		return
 	}
-	ctx.SetSameSite(http.SameSiteLaxMode)
-	ctx.SetCookie("SessionId", sid, 60*60*24*7, "/", "", true, true)
-	redis_pool.ExtendTimeForCookie(sid)
-	log.Logger.Info("user netclogin", log.Any("user : ", user))
-	ctx.JSON(http.StatusOK, response.SuccessMsg("success to login"))
+	lastCode = initialResp.Code
+	if processQrcodeStatus(pollCtx, wsClient, sid, api, initialResp) {
+		return
+	}
+
+	for {
+		select {
+		case <-wsClient.Done():
+			return
+		case <-pollCtx.Done():
+			if errors.Is(pollCtx.Err(), context.DeadlineExceeded) {
+				sendSocketResponse(wsClient, sid, 408, "request timeout", nil)
+			}
+			return
+		case <-ticker.C:
+			resp, err := api.QrcodeCheck(pollCtx, &weapi.QrcodeCheckReq{Type: 1, Key: unikey})
+			if err != nil {
+				log.Logger.Error("fail to login", log.Any("err : ", err))
+				sendSocketResponse(wsClient, sid, 500, "fail to login", nil)
+				return
+			}
+
+			if resp.Code == lastCode && resp.Code != 803 {
+				continue
+			}
+			lastCode = resp.Code
+
+			if processQrcodeStatus(pollCtx, wsClient, sid, api, resp) {
+				return
+			}
+		}
+	}
 }

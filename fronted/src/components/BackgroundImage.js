@@ -2,16 +2,21 @@ import { useEffect, useState } from "react";
 import "../styles/background.css";
 
 // 背景图片列表（移到组件外避免重新创建）
-const backgrounds = [
-	"/picture/wallhaven-z8o88j.jpg",
-	"/picture/wallhaven-k7wor1.jpg",
-	"/picture/wallhaven-281d5y.png",
-	"/picture/wallhaven-rqrv21.png",
-];
+const backgrounds = {
+	desktop: [
+		"/picture/desktop/wallhaven-z8o88j.jpg",
+		"/picture/desktop/wallhaven-k7wor1.jpg",
+		"/picture/desktop/wallhaven-281d5y.png",
+		"/picture/desktop/wallhaven-rqrv21.png",
+	],
+	mobile: ["/picture/mobile/wallhaven-d8x71m.jpg", "/picture/mobile/wallhaven-mlwdvk.png", ],
+};
 
 // 获取随机背景图（避免重复）
-const getRandomBackground = (currentBg) => {
-	const availableBackgrounds = backgrounds.filter((bg) => bg !== currentBg);
+const getRandomBackground = (currentBg, isMobile) => {
+	const list = isMobile ? backgrounds.mobile : backgrounds.desktop;
+	const availableBackgrounds = list.filter((bg) => bg !== currentBg);
+	if (availableBackgrounds.length === 0) return list[0];
 	const randomIndex = Math.floor(Math.random() * availableBackgrounds.length);
 	return availableBackgrounds[randomIndex];
 };
@@ -32,12 +37,19 @@ const BackgroundImage = () => {
 	const [activeLayer, setActiveLayer] = useState(1); // 1 或 2
 	const [layer1State, setLayer1State] = useState("hidden"); // hidden, zooming, visible, fading
 	const [layer2State, setLayer2State] = useState("hidden");
+	const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
 	const [isImageLoadFailed, setIsImageLoadFailed] = useState(false);
 
 	useEffect(() => {
+		const handleResize = () => {
+			setIsMobile(window.innerWidth <= 768);
+		};
+		window.addEventListener("resize", handleResize);
+
 		// 初始化：随机选择第一张背景图并预加载
-		const initialBg = backgrounds[Math.floor(Math.random() * backgrounds.length)];
+		const list = isMobile ? backgrounds.mobile : backgrounds.desktop;
+		const initialBg = list[Math.floor(Math.random() * list.length)];
 
 		preloadImage(initialBg)
 			.then(() => {
@@ -55,7 +67,8 @@ const BackgroundImage = () => {
 			});
 
 		// 预加载所有背景图片
-		backgrounds.forEach((bg) => {
+		const allBgs = [...backgrounds.desktop, ...backgrounds.mobile];
+		allBgs.forEach((bg) => {
 			if (bg !== initialBg) {
 				preloadImage(bg);
 			}
@@ -69,7 +82,10 @@ const BackgroundImage = () => {
 		// 每5秒切换背景（2s过渡 + 3s显示）
 		const interval = setInterval(() => {
 			const currentBg = currentActiveLayer === 1 ? currentLayer1Image : currentLayer2Image;
-			const nextBg = getRandomBackground(currentBg || backgrounds[0]);
+			const nextBg = getRandomBackground(
+				currentBg || (isMobile ? backgrounds.mobile[0] : backgrounds.desktop[0]),
+				isMobile,
+			);
 
 			// 预加载下一张图片后开始过渡
 			preloadImage(nextBg).then(() => {

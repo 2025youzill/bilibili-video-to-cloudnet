@@ -21,7 +21,12 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"bvtc/ai"
@@ -31,6 +36,7 @@ import (
 	"bvtc/route"
 
 	redis_pool "bvtc/tool/pool"
+	"bvtc/tool/socket"
 	"bvtc/tool/spew"
 )
 
@@ -50,14 +56,48 @@ func main() {
 
 	go ai.WarmupAITitle()
 	newRouter := route.NewRouter()
+	appPort := os.Getenv("APP_PORT")
+	if appPort == "" {
+		appPort = "8081"
+	}
 	s := &http.Server{
-		Addr:           ":8080",
+		Addr:           ":" + appPort,
 		Handler:        newRouter,
 		ReadTimeout:    30 * time.Second,
 		WriteTimeout:   30 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 	}
-	if err := s.ListenAndServe(); err != nil {
+
+	serverErr := make(chan error, 1)
+	go func() {
+		serverErr <- s.ListenAndServe()
+	}()
+
+	sigCtx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	select {
+	case err := <-serverErr:
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Logger.Error("server error", log.Any("serverError", err))
+		}
+	case <-sigCtx.Done():
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		if err := s.Shutdown(shutdownCtx); err != nil {
+			log.Logger.Error("http server shutdown failed", log.Any("err", err))
+		}
+		if err := socket.Shutdown(shutdownCtx); err != nil && !errors.Is(err, context.Canceled) {
+			log.Logger.Error("websocket manager shutdown failed", log.Any("err", err))
+		}
+
+		if err := <-serverErr; err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Logger.Error("server error", log.Any("serverError", err))
+		}
+	}
+
+	if err := sigCtx.Err(); err != nil && !errors.Is(err, context.Canceled) {
 		log.Logger.Error("server error", log.Any("serverError", err))
 	}
 }

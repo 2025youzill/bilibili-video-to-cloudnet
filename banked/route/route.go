@@ -41,6 +41,7 @@ import (
 func NewRouter() *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 	server := gin.Default()
+	setTrustedProxies(server)
 
 	// 基础中间件
 	server.Use(Cors())
@@ -59,6 +60,31 @@ func NewRouter() *gin.Engine {
 	registerRoutes(bvtcGroup)
 
 	return server
+}
+
+func setTrustedProxies(server *gin.Engine) {
+	raw := strings.TrimSpace(os.Getenv("TRUSTED_PROXIES"))
+	if raw == "" {
+		return
+	}
+
+	proxies := make([]string, 0)
+	for _, item := range strings.Split(raw, ",") {
+		item = strings.TrimSpace(item)
+		if item != "" {
+			proxies = append(proxies, item)
+		}
+	}
+
+	if len(proxies) == 0 {
+		return
+	}
+
+	if err := server.SetTrustedProxies(proxies); err != nil {
+		log.Logger.Warn("failed to set trusted proxies",
+			log.Any("err", err),
+			log.String("trustedProxies", strings.Join(proxies, ", ")))
+	}
 }
 
 // registerRoutes 注册所有API路由
@@ -80,8 +106,8 @@ func registerRoutes(group *gin.RouterGroup) {
 	authGroup.Use(middleware.SessionAuthMiddleware())
 	{
 		authGroup.POST("/netcloud/logout", cloudnet.DeleteCookie)     // 退出登录,删除状态（改为POST防CSRF）
-		authGroup.GET("/netcloud/playlist", cloudnet.ShowPlaylist)    //获取歌单
-		authGroup.GET("/netcloud/useravatar", cloudnet.GetUserAvatar) //获取用户头像
+		authGroup.GET("/netcloud/playlist", cloudnet.ShowPlaylist)    // 获取歌单
+		authGroup.GET("/netcloud/useravatar", cloudnet.GetUserAvatar) // 获取用户头像
 
 		authGroup.POST("/bilibili/createtask", bilibili.CreateLoadMP4Task)                     // 创建任务
 		authGroup.GET("/bilibili/checktask/:taskId", bilibili.CheckLoadMP4Task)                // 查询任务状态

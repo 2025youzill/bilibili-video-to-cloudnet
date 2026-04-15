@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import QrLoginForm from "../components/QrLoginForm";
 import { checkLoginStatus } from "../api/login";
@@ -13,7 +13,7 @@ const LoginPage = () => {
 	const navigate = useNavigate();
 	const [backgroundVisible, setBackgroundVisible] = useState(true);
 	const [topbarVisible, setTopbarVisible] = useState(false);
-	const [isLoggedIn, setIsLoggedIn] = useState(null); // null: checking, false: no, true: yes
+	const [loginChecked, setLoginChecked] = useState(false);
 
 	useEffect(() => {
 		const checkAuth = async () => {
@@ -21,19 +21,19 @@ const LoginPage = () => {
 				const res = await checkLoginStatus();
 				if (res.code === 200) {
 					navigate("/bilibili");
-					setIsLoggedIn(true);
-				} else {
-					setIsLoggedIn(false);
+					return;
 				}
 			} catch (error) {
-				setIsLoggedIn(false);
+				// ignore and continue to qrcode login
 			}
+
+			setLoginChecked(true);
 		};
 
 		checkAuth();
 	}, [navigate]);
 
-	if (isLoggedIn === null) {
+	if (!loginChecked) {
 		return (
 			<div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
 				Checking login status...
@@ -137,7 +137,7 @@ const LoginPage = () => {
 
 			{/* 登录表单 */}
 			<div className="login-form-glass">
-				<QrLoginForm />
+				<QrLoginForm autoFetch />
 			</div>
 		</div>
 	);

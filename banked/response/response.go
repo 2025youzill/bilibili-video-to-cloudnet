@@ -26,27 +26,22 @@ type ResponseMsg struct {
 	Data interface{} `json:"data"`
 }
 
-func SuccessMsg(data interface{}) *ResponseMsg {
-	msg := &ResponseMsg{
-		Code: 200,
-		Msg:  "SUCCESS",
+func Msg(code int, msg string, data interface{}) *ResponseMsg {
+	return &ResponseMsg{
+		Code: code,
+		Msg:  msg,
 		Data: data,
 	}
-	return msg
+}
+
+func SuccessMsg(data interface{}) *ResponseMsg {
+	return Msg(200, "SUCCESS", data)
 }
 
 func FailMsg(msg string) *ResponseMsg {
-	msgObj := &ResponseMsg{
-		Code: -1,
-		Msg:  msg,
-	}
-	return msgObj
+	return Msg(-1, msg, nil)
 }
 
 func FailCodeMsg(code int, msg string) *ResponseMsg {
-	msgObj := &ResponseMsg{
-		Code: code,
-		Msg:  msg,
-	}
-	return msgObj
+	return Msg(code, msg, nil)
 }
